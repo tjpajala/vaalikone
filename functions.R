@@ -16,7 +16,125 @@ if(!require(ggplot2)){
   install.packages("ggplot2")
 }
 library(ggplot2)
+if(!require(randomForest)){
+  install.packages("randomForest")
+}
+library(randomForest)
 
+get_YLE_2015_data <- function(){
+  data <- read_csv2("./data/ehdokasdata_2015_yle.csv")
+  #replace spaces with _ because tidy evaluation doesn't like spaces
+  names(data) <- str_replace_all(names(data), " ", "_")
+  data$vaalipiiri <- as.factor(data$vaalipiiri)
+  #include only Helsinki
+  data <- filter(data, vaalipiiri=="01 Helsingin vaalipiiri")
+  #drop columns with all NAs
+  data <- data[,colSums(!is.na(data))>0]
+  
+  return(data)
+}
+
+
+get_YLE_2011_data <- function(){
+  data <- read_csv("./data/ehdokasdata_eduskunta11_yle.csv", col_types = paste0(rep("c",108),sep="",collapse=""))
+  names(data) <- str_replace_all(names(data), " ", "_")
+  data$Vaalipiiri <- as.factor(data$Vaalipiiri)
+  #include only Helsinki
+  data <- filter(data, Vaalipiiri=="01 Helsingin vaalipiiri")
+  #drop columns with all NAs
+  data <- data[,colSums(!is.na(data))>0]
+  
+  return(data)
+}
+
+get_HS_2015_data <- function(){
+  
+  col_define <- cols(
+    X1=col_skip(),
+    id=col_integer(),
+    name=col_character(),
+    district=col_character(),
+    party=col_character(),
+    age=col_integer(),
+    gender=col_character(),
+    www=col_skip(),
+    facebook=col_skip(),
+    twitter=col_skip(),
+    education=col_character(),
+    votes=col_integer(),
+    lambda=col_double(),
+    elected=col_logical(),
+    q1=col_integer(),
+    q2=col_integer(),
+    q3=col_integer(),
+    q4=col_integer(),
+    q5=col_integer(),
+    q6=col_integer(),
+    q7=col_integer(),
+    q8=col_integer(),
+    q9=col_integer(),
+    q10=col_integer(),
+    q11=col_integer(),
+    q12=col_integer(),
+    q13=col_integer(),
+    q14=col_integer(),
+    q15=col_integer(),
+    q16=col_integer(),
+    q17=col_integer(),
+    q18=col_integer(),
+    q19=col_integer(),
+    q20=col_integer(),
+    q21=col_integer(),
+    q22=col_integer(),
+    q23=col_integer(),
+    q24=col_integer(),
+    q25=col_integer(),
+    q26=col_integer(),
+    q27=col_integer(),
+    q28=col_integer(),
+    q29=col_integer(),
+    q30=col_integer(),
+    incumbency=col_logical(),
+    vec_social=col_integer(),
+    media=col_integer()
+  )
+  
+  data <- read_csv2("./data/candidates_helsinki_2015.csv", col_names = TRUE, col_types = col_define, na=c("","NULL"))
+  data$district <- as.factor(data$district)
+  data$party <- set_small_parties_to_other(data, colname_party="party")
+  data$gender <- as.factor(data$gender)
+  
+  return(data)
+}
+
+get_functional_column_name <- function(data, alternative_spellings){
+  for (alt in alternative_spellings){
+    if(sum(str_detect(names(data), paste0(c("^",alt),collapse="")))==1){
+      col <- alt
+    }
+  }
+
+  return(col)
+}
+
+get_dataset <- function(name){
+  data <- switch (name,
+          hs_2015=get_HS_2015_data(),
+          yle_2011=get_YLE_2011_data(),
+          yle_2015=get_YLE_2015_data()
+          )
+  
+  return(data)
+}
+
+get_data_cols <- function(dataset_name,data){
+  data_cols <- switch (dataset_name,
+                       hs_2015 = names(select(data, q1:q30)),
+                       yle_2015 = str_subset(names(data), "[:digit:]+\\|[:upper:]"),
+                       yle_2011 = str_subset(names(data), "[:digit:]+\\.")
+  )
+  return(data_cols)
+}
 
 set_small_parties_to_other <- function(data, colname_party="party"){
   #'Combine small parties to group "Other"
@@ -36,7 +154,7 @@ set_small_parties_to_other <- function(data, colname_party="party"){
   data[[colname_party]] <- factor(data[[colname_party]])
   var_unquo <- sym(colname_party)
   big_parties<-data[,colname_party] %>% count(!!var_unquo) %>% filter(n>10) %>% pull(!!var_unquo)
-  data[,colname_party] <- fct_other(data$party,keep=big_parties,other_level = "Other")
+  data[,colname_party] <- fct_other(data[[colname_party]],keep=big_parties,other_level = "Other")
   return(data[[colname_party]])
 }
 
@@ -160,7 +278,7 @@ FAplot<-function(fa_ans,centers=FALSE,add=FALSE,pch=21,flip=0,...){
 }
 
 
-FA_ggplot <- function(fa, flip=20) {
+FA_ggplot <- function(fa, flip=20, colname_party="party") {
   #' Plot factor plot with ggplot
   #' 
   #' Plots points on a 2D coordinate scatter plot, based on their factor scores.
@@ -170,17 +288,30 @@ FA_ggplot <- function(fa, flip=20) {
   #' 
   #' @example FA_ggplot(PAF(data, 2, FALSE, names(select(data, q1:q30))),flip=20)
   #' @export
+  var_unquo <- sym(colname_party)
   plt_data <- rot(fa$scores$PA1, fa$scores$PA2, flip=flip)
   fa$scores$PA1 <- plt_data[,1]
   fa$scores$PA2 <- plt_data[,2]
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
   colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
-  ggplot(fa$scores,aes(x=PA1, y=PA2, color=party))+geom_point()+
+  ggplot(fa$scores,aes(x=PA1, y=PA2, color=!!var_unquo))+geom_point()+
     scale_color_manual(values=colp)+coord_flip()+theme_classic()
 }
 
-
+sub_parties_for_shortcodes <- function(datalist){
+  #get rid of extra party names inside brackets inside the party columns
+  datalist <- str_replace(datalist," [:punct:].+[:punct:]","")
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue")
+  names(short_parties) <- parties
+  parties_c <- str_c("^",parties,collapse = "|")
+  party_repl <- function(p){
+    return(as.character(short_parties[p]))
+    #return(p)
+  }
+  str_replace_all(datalist, parties_c,party_repl)
+}
 
 classComp<-function(data,k,repeats,justRF){
 
