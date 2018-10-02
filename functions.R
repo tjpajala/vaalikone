@@ -20,6 +20,10 @@ if(!require(randomForest)){
   install.packages("randomForest")
 }
 library(randomForest)
+if(!require(caret)){
+  install.packages("caret")
+}
+library(caret)
 
 get_YLE_2015_data <- function(){
   data <- read_csv2("./data/ehdokasdata_2015_yle.csv")
@@ -224,13 +228,14 @@ rot<-function(x,y,flip){
 
 
 
-FAplot<-function(fa_ans,centers=FALSE,add=FALSE,pch=21,flip=0,...){
+FAplot<-function(fa_ans,party_col,centers=FALSE,add=FALSE,pch=21,flip=0,...){
   #'Plot party candidates on a 2D factor plot
   #'
   #'Takes candidate answers and their factor scores, and plots them on a 2D plot (that can be rotated), 
   #'coloring candidates by party.
   #'
   #'@param fa_ans The data set and factor scores together. Use \code{\link{PAF}} to get this.
+  #'@param party_col Column name that represents party (as string).
   #'@param centers Boolen to control for drawing party centers.
   #'@param add Do you want to add points to a previous plot, or draw a new one?
   #'@param pch Which plot symbol to use.
@@ -240,15 +245,15 @@ FAplot<-function(fa_ans,centers=FALSE,add=FALSE,pch=21,flip=0,...){
   #'@example FAplot(PAF(data, 2, FALSE, names(select(data, q1:q30))), centers=FALSE, add=FALSE)
   #'@export
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow","red2","red1","pink2","red1","darkred","green","red1")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   
   #plot FA with two factors
   if(centers==TRUE){
     
     fa_ans_flipped<-fa_ans
     bck<-as.character("white")
-    bck<-colp[match(fa_ans_flipped$party,parties,nomatch=0)]
-    parties_legend<-unique(fa_ans_flipped$party)
+    bck<-colp[match(fa_ans_flipped[,party_col],parties,nomatch=0)]
+    parties_legend<-unique(fa_ans_flipped[,party_col])
     col_legend<-colp[match(parties_legend,parties,nomatch=0)]
     
     len<-fa_ans_flipped[,"PA1"]^2+fa_ans_flipped[,"PA2"]^2
@@ -266,8 +271,8 @@ FAplot<-function(fa_ans,centers=FALSE,add=FALSE,pch=21,flip=0,...){
   } else{
     fa_ans_flipped<-fa_ans
     bck<-as.character("white")
-    bck<-colp[match(fa_ans_flipped$party,parties,nomatch=0)]
-    parties_legend<-unique(fa_ans_flipped$party)
+    bck<-colp[match(fa_ans_flipped[,party_col],parties,nomatch=0)]
+    parties_legend<-unique(fa_ans_flipped[,party_col])
     col_legend<-colp[match(parties_legend,parties,nomatch=0)]
     rotated<-rot(fa_ans_flipped[,"PA2"],fa_ans_flipped[,"PA1"],flip = flip)
     fa_ans_flipped[,"PA1"]<-rotated[,2]
@@ -293,41 +298,65 @@ FA_ggplot <- function(fa, flip=20, colname_party="party") {
   fa$scores$PA1 <- plt_data[,1]
   fa$scores$PA2 <- plt_data[,2]
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow","red2","red1","pink2","red1","darkred","green","red1")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
   ggplot(fa$scores,aes(x=PA1, y=PA2, color=!!var_unquo))+geom_point()+
     scale_color_manual(values=colp)+coord_flip()+theme_classic()
 }
 
-sub_parties_for_shortcodes <- function(datalist){
+sub_parties_for_shortcodes <- function(datacol){
+  #'Substitute Finnish Party names with short versions.
+  #'
+  #'Takes all party names and substitutes their short versions.
+  #'
+  #'@param datacol Vector of parties to be replaced.
+  #'
+  #'@example data$party <- sub_parties_for_shortcodes(datacol=dataparty)
+  #'
+  
   #get rid of extra party names inside brackets inside the party columns
-  datalist <- str_replace(datalist," [:punct:].+[:punct:]","")
-  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP")
-  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue")
+  datacol <- str_replace(datacol," [:punct:].+[:punct:]","")
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue")
   names(short_parties) <- parties
   parties_c <- str_c("^",parties,collapse = "|")
   party_repl <- function(p){
     return(as.character(short_parties[p]))
     #return(p)
   }
-  str_replace_all(datalist, parties_c,party_repl)
+  str_replace_all(datacol, parties_c,party_repl)
 }
 
-classComp<-function(data,k,repeats,justRF){
-
+classComp<-function(data,k,repeats,model,party_col){
+  #'Predict party membership with caret
+  #'
+  #'Perform k-fold CV and hyperparameter optimization with caret to predict party affiliation based on 
+  #'election machine questions.
+  #'
+  #'@param data The data set to be used: should only include party column and predictors!
+  #'@param k Selected k for cross-validation.
+  #'@param repeats Number of repeats for CV (increases stability).
+  #'@param model The caret model to be used in prediction.
+  #'@param party_col Column name that includes party affiliation.
+  #'
+  #'@return Data frame that includes optimized parameters, accuracy and kappa information.
+  #'
+  #'@example res <- classComp(data, 10, 1, "rf", "party")
+  #'@export
   controlCV<-trainControl(method="cv",number=k,repeats=repeats)
-
-  #Random Forest
-  rf<-train(party~.,data=data,method="rf",metric="Accuracy",trControl=controlCV)
+  f <- as.formula(paste0(party_col,"~."))
+  #run model
+  rf<-train(f,data=data,method=model,metric="Accuracy",trControl=controlCV)
   res<-data.frame("par"=unlist(rf$bestTune),rf$results[which(rf$results[,1]==unlist(rf$bestTune[1])),2:5])
-  rownames(res)<-c("Random Forest")
+  rownames(res)<-c(model)
   
   return(res)
 }
 
 #FUNCTION for removing questions from data pool
+#DEPRECATED
 removeQnum<-function(data,n){
-  qtext<-paste("q",n,sep="")
+  qtext<-names(data)[n]
   if(!qtext%in%names(data)) stop("Question number outside bounds!")
   var.out.bool<-!names(data) %in% qtext
   temp<-data
@@ -336,19 +365,45 @@ removeQnum<-function(data,n){
   return(temp)
 }
 
+removeQname <- function(data,qname){
+  #'Remove election machine question with name \code{qname}.
+  #'
+  #'@param data Dataset
+  #'@param qname The name of question to be removed
+  #'
+  #'@return Dataset without the removed question.
+  #'@export
+  var_unquo <- qname
+  return(select(data,-var_unquo))
+}
 
-analyze_removed_questions <- function(data, imp_num){
+
+analyze_removed_questions <- function(data, imp_num, party_col){
+  #'Analyze effect of removal of questions on accuracy with Random Forest.
+  #'
+  #'Removes questions based on their importance value (starting from least important),
+  #'runs Random Forest, and analyzes accuracy.
+  #'
+  #'@param data The dataset with questions and party affiliation.
+  #'@param imp_num Question numbers from least important to most important as vector.
+  #'@param party_col Column name of party affiliation.
+  #'
+  #'@return Data frame with class error by removed question.
+  #'
+  #'@export
   #partywise error rate with removal
   d2<-data
-  nam<-colnames(randomForest(party~q1,data=data)$confusion)
+  f <- as.formula(paste0(party_col,"~q1"))
+  nam<-colnames(randomForest(f,data=data)$confusion)
   nam<-nam[1:(length(nam)-1)]
   res<-as.data.frame(matrix(0,1,length(nam)+1))
   colnames(res)<-c("removed",nam)
   ptm <- proc.time()
   for(x in imp_num[1:29]){
     print(x)
-    d2<-removeQnum(d2,x)
-    rf<-randomForest(party~.,data=d2,importance=TRUE,trControl=trainControl(method="cv",number=10,repeats=1))
+    d2<-removeQname(d2,paste0("q",x,collapse = ""))
+    f <- as.formula(paste0(party_col,"~."))
+    rf<-randomForest(f,data=d2,importance=TRUE,trControl=trainControl(method="cv",number=10,repeats=1))
     rconf<-rf$confusion[,"class.error"]
     pres<-as.data.frame(matrix(0,1,length(nam)))
     colnames(pres)<-nam
@@ -364,13 +419,18 @@ analyze_removed_questions <- function(data, imp_num){
 }
 
 error_ggplot <- function(res){
+  #'Plot classwise error by removed question with ggplot.
+  #'
+  #'@param res Data frame returned by \code{\link{analyze_removed_questions}}
+  #'@export
   res$n <- seq.int(nrow(res))
   res_plot <- melt(res,id.vars="n",variable.name = "party",value.name = "error")
   res_plot <- res_plot[res_plot$party!="removed",]
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow","red2","red1","pink2","red1","darkred","green","red1")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
   ggplot(res_plot,aes(x=n, y=error, color=party))+geom_line()+theme_minimal()+
     stat_summary(fun.y=mean, geom="line", linetype="dashed", colour="black")+
-    scale_color_manual(values=colp)
+    scale_color_manual(values=colp)+
+    geom_text(data=subset(res_plot,n==max(res_plot$n)),aes(x=n,y=error,label=party,color=party),nudge_x = 1, nudge_y = 0, show.legend = FALSE)
 }

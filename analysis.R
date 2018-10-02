@@ -3,9 +3,13 @@ library(readr)
 library(reshape2)
 #pull functions from other files
 source("functions.R")
+set.seed(123)
 
-
-dataset_name <- "yle_2015" #options: hs_2015, yle_2011
+#dataset sources:
+#yle_2015: http://data.yle.fi/dokumentit/Eduskuntavaalit2015/vastaukset_avoimena_datana.csv
+#yle_2011: https://yle.fi/aihe/artikkeli/2011/05/16/vuoden-2011-vaalikonetiedot-nyt-avoimena-datana
+#hs_2015:  https://www.hs.fi/politiikka/art-2000002801942.html
+dataset_name <- "hs_2015" #options: hs_2015, yle_2011
 data <- get_dataset(name=dataset_name)
 q_cols=get_data_cols(dataset_name = dataset_name, data=data)
 
@@ -27,17 +31,22 @@ data_fa <- data %>% select(., one_of(party_col, q_cols))
 fa <- PAF(data_fa, nfactors=2, vss=TRUE, cols=q_cols)
 
 #baseR version
-#FAplot(fa$scores, centers = FALSE, add=FALSE, pch=21, flip=0)
+FAplot(fa$scores, party_col, centers = FALSE, add=FALSE, pch=21, flip=0)
 
 #ggplot version
 FA_ggplot(fa,flip=20,colname_party = party_col)
 
-qdata <- select(data,-id:-district) %>% select(-age:-elected) %>% select(party:q30)
-removeQnum(qdata,1)
-res <- classComp(qdata,10,1,justRF = T)
+#save question text to another vector, replace dataframe header with q#
+qdata <- select(data, one_of(party_col, q_cols))
+q_text <- q_cols
+colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
 
-rf<-randomForest(party~.,data=qdata,importance=TRUE)
-classComp(qdata,k=10,repeats=1,justRF=TRUE)
+
+removeQnum(qdata,1)
+res <- classComp(qdata,10,1,justRF = T, party_col = party_col)
+
+rf<-randomForest(as.formula(paste0(party_col,"~.")),data=qdata,importance=TRUE)
+classComp(qdata,k=10,repeats=1,justRF=TRUE, party_col = party_col)
 
 ord<-order(rf$importance[,"MeanDecreaseGini"])
 imp<-rf$importance[,"MeanDecreaseGini"]
@@ -49,10 +58,10 @@ d2<-qdata
 ptm <- proc.time()
 for(x in imp_num[1:29]){
   print(x)
-  d2<-removeQnum(d2,x)
+  d2<-removeQname(d2,names(imp)[x])
   #paf<-PAF(d2,nfactors=2,vss=T)
   #q_loadings<-append(q_loadings,list(paf$loadings))
-  clComp<-classComp(d2,k=10,repeats=1,justRF=TRUE)
+  clComp<-classComp(d2,k=10,repeats=1,model="rf", party_col = party_col)
   classifiers<-rbind(classifiers,c("removed"=x,clComp["Random Forest","Accuracy"],imp[x]))
 }
 
@@ -64,7 +73,7 @@ plot(classifiers$acc,type="l",xlab="Number of removed questions",ylab="Accuracy"
 
 
 
-res <- analyze_removed_questions(qdata, imp_num=imp_num)
+res <- analyze_removed_questions(qdata, imp_num=imp_num, party_col=party_col)
 error_ggplot(res)
 
 
