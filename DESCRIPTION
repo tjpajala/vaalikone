@@ -1,0 +1,29 @@
+Package: elecmachine
+Title: Scripts for analysing Finnish Election Machine datasets
+Version: 0.0.0.9000
+Authors@R:
+    person(given = "Tommi",
+           family = "Pajala",
+           role = c("aut", "cre"),
+           email = "tjpajala@gmail.com")
+Description: Functions that can be used to analyze the election machine data from Helsingin Sanomat (year 2015) and YLE (years 2011 and 2015).
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    dplyr,
+    optimx,
+    psych,
+    caret,
+    randomForest,
+    reshape2,
+    stringr,
+    readr,
+    rlang,
+    forcats,
+    stats
+Suggests:
+    ggplot2,
+    testthat,
+    covr
+RoxygenNote: 6.1.0
