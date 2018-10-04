@@ -1,6 +1,7 @@
 library(dplyr)
 library(readr)
 library(reshape2)
+library(randomForest)
 #pull functions from other files
 source("./R/functions.R")
 source("./R/plotting.R")
@@ -12,7 +13,7 @@ set.seed(123)
 #hs_2015:  https://www.hs.fi/politiikka/art-2000002801942.html
 dataset_name <- "yle_2015" #options: hs_2015, yle_2011
 data <- get_dataset(name=dataset_name)
-party_col <- .get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
 q_cols=get_data_cols(dataset_name = dataset_name, data=data)
 data <- prepare_data(data, q_cols, party_col)
 
@@ -45,18 +46,14 @@ q_loadings<-list()
 d2<-qdata
 
 
-library(doParallel)
-cl <- makePSOCKcluster(3)
-registerDoParallel(cl)
-
 ptm <- proc.time()
-for(x in imp_num[1:29]){
+for(x in imp_num[1:(length(imp_num)-1)]){
   print(x)
   d2<-removeQname(d2,names(imp)[x])
   #paf<-PAF(d2,nfactors=2,vss=T)
   #q_loadings<-append(q_loadings,list(paf$loadings))
-  clComp<-classComp(d2,k=10,repeats=1,model="rf", party_col = party_col)
-  classifiers<-rbind(classifiers,c("removed"=x,clComp["Random Forest","Accuracy"],imp[x]))
+  clComp<-classComp(d2,k=10,model="rf", party_col = party_col)
+  classifiers<-rbind(classifiers,c("removed"=x,clComp["rf","Accuracy"],imp[x]))
 }
 
 classifiers<-classifiers[-1,]
@@ -67,7 +64,7 @@ plot(classifiers$acc,type="l",xlab="Number of removed questions",ylab="Accuracy"
 
 
 
-res <- analyze_removed_questions(qdata, imp_num=imp_num, party_col=party_col)
+res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], party_col=party_col)
 error_ggplot(res)
 
 

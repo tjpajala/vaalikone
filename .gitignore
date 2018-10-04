@@ -7,3 +7,5 @@
 factor_plots2.R
 impQuestions2015.R
 vaalikone_analyysi.Rproj
+codecov.yml
+.travis.yml

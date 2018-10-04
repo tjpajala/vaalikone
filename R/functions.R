@@ -104,7 +104,18 @@ get_YLE_2011_data <- function(){
   return(data)
 }
 
-.get_functional_column_name <- function(data, alternative_spellings){
+#'Get a column name with one of the alternative spellings
+#'
+#'Looks at columns to check if there is one with a name specified in \{alternative_spellings}. If such a 
+#'column exists, returns the column name. In this package, used to get the party column name (this varies
+#'between data sets.)
+#'
+#'@param data Data set to look into.
+#'@param alternative_spellings Possible alternative spellings of the column name to look for.
+#'
+#'@return The name of the column  that was found.
+#'@note Behavior not specified if many columns of the alternative_spellings exist.
+get_functional_column_name <- function(data, alternative_spellings){
   for (alt in alternative_spellings){
     if(sum(stringr::str_detect(names(data), paste0(c("^",alt),collapse="")))==1){
       col <- alt
@@ -122,6 +133,7 @@ get_YLE_2011_data <- function(){
 #'@param name Dataset name (options: "yle_2011", "yle_2015", "hs_2015")
 #'
 #'@return Tbl dataframe.
+#'@export
 get_dataset <- function(name){
   data <- switch (name,
           hs_2015=.get_HS_2015_data(),
@@ -142,9 +154,9 @@ get_dataset <- function(name){
 #'@export
 get_data_cols <- function(dataset_name,data){
   data_cols <- switch (dataset_name,
-                       hs_2015 = names(select(data, q1:q30)),
-                       yle_2015 = str_subset(names(data), "[:digit:]+\\|[:upper:]"),
-                       yle_2011 = str_subset(names(data), "[:digit:]+\\.")
+                       hs_2015 = names(dplyr::select(data, q1:q30)),
+                       yle_2015 = stringr::str_subset(names(data), "[:digit:]+\\|[:upper:]"),
+                       yle_2011 = stringr::str_subset(names(data), "[:digit:]+\\.")
   )
   return(data_cols)
 }
@@ -249,6 +261,7 @@ PAF<-function(data,nfactors,vss,cols){
 #'@param datacol Vector of parties to be replaced.
 #'
 #'@usage data$party <- sub_parties_for_shortcodes(datacol=dataparty)
+#'@export
 sub_parties_for_shortcodes <- function(datacol){
   #get rid of extra party names inside brackets inside the party columns
   datacol <- stringr::str_replace(datacol," [:punct:].+[:punct:]","")
@@ -318,7 +331,6 @@ removeQname <- function(data,qname){
 #'@return Data frame with class error by removed question.
 #'
 #'@export
-#partywise error rate with removal
 analyze_removed_questions <- function(data, imp_num, party_col){
   d2<-data
   f <- as.formula(paste0(party_col,"~q1"))

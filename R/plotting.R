@@ -90,7 +90,7 @@ FA_ggplot <- function(fa, flip=20, colname_party="party") {
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
   colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
-  ggplot2::ggplot(fa$scores,aes(x=PA1, y=PA2, color=!!var_unquo))+ggplot2::geom_point()+
+  ggplot2::ggplot(fa$scores,ggplot2::aes(x=PA1, y=PA2, color=!!var_unquo))+ggplot2::geom_point()+
     ggplot2::scale_color_manual(values=colp)+ggplot2::coord_flip()+ggplot2::theme_classic()
 }
 
@@ -108,5 +108,5 @@ error_ggplot <- function(res){
   ggplot2::ggplot(res_plot,ggplot2::aes(x=n, y=error, color=party))+ggplot2::geom_line()+ggplot2::theme_minimal()+
     ggplot2::stat_summary(fun.y=mean, geom="line", linetype="dashed", colour="black")+
     ggplot2::scale_color_manual(values=colp)+
-    ggplot2::geom_text(data=dplyr::subset(res_plot,n==max(res_plot$n)),ggplot2::aes(x=n,y=error,label=party,color=party),nudge_x = 1, nudge_y = 0, show.legend = FALSE)
+    ggplot2::geom_text(data=subset(res_plot,n==max(res_plot$n)),ggplot2::aes(x=n,y=error,label=party,color=party),nudge_x = 1, nudge_y = 0, show.legend = FALSE)
 }
