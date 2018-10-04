@@ -12,7 +12,8 @@ devtools::install_github("tjpajala/vaalikone")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to get the YLE 2015 data set, and perform some
+basic analysis on it:
 
 ``` r
 dataset_name <- "yle_2015" #options: hs_2015, yle_2011
@@ -29,13 +30,9 @@ colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
 fa <- PAF(qdata, nfactors=2, vss=TRUE, cols=q_cols)
 #plot candidates on the factor plot
 FA_ggplot(fa,flip=20,colname_party = party_col)
-```
-[Factor plot of candidates](fa_plot.png)
-``` r
+
 #analyze information value of questions
 res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], party_col=party_col)
 #plot class error by removed question
 error_ggplot(res)
 ```
-[Class error of party prediction by number of removed questions](class_error_by_question.png)
-
