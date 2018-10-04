@@ -3,6 +3,7 @@ library(readr)
 library(reshape2)
 #pull functions from other files
 source("./R/functions.R")
+source("./R/plotting.R")
 set.seed(123)
 
 #dataset sources:
