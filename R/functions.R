@@ -334,7 +334,7 @@ removeQname <- function(data,qname){
 analyze_removed_questions <- function(data, imp_num, party_col){
   d2<-data
   f <- as.formula(paste0(party_col,"~q1"))
-  nam<-colnames(randomForest(f,data=d2)$confusion)
+  nam<-colnames(randomForest::randomForest(f,data=d2)$confusion)
   nam<-nam[1:(length(nam)-1)]
   res<-as.data.frame(matrix(0,1,length(nam)+1))
   colnames(res)<-c("removed",nam)
