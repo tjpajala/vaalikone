@@ -16,5 +16,5 @@ test_that("PAF works", {
 
 test_that("VSS can be printed", {
   fa <- PAF(qdata, nfactors = 2, vss=TRUE, cols=q_col)
-  
+  expect_equivalent(dplyr::select(fa$scores,c(-PA1,-PA2)), qdata)
 })

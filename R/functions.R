@@ -115,6 +115,7 @@ get_YLE_2011_data <- function(){
 #'
 #'@return The name of the column  that was found.
 #'@note Behavior not specified if many columns of the alternative_spellings exist.
+#'@export
 get_functional_column_name <- function(data, alternative_spellings){
   for (alt in alternative_spellings){
     if(sum(stringr::str_detect(names(data), paste0(c("^",alt),collapse="")))==1){
