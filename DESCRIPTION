@@ -22,7 +22,8 @@ Imports:
     forcats,
     stats,
     e1071,
-    dplyr
+    dplyr,
+    magrittr
 Suggests:
     ggplot2,
     testthat,
