@@ -21,7 +21,8 @@ Imports:
     readr,
     rlang,
     forcats,
-    stats
+    stats,
+    e1071
 Suggests:
     ggplot2,
     testthat,
