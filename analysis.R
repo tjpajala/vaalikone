@@ -68,3 +68,5 @@ res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], 
 error_ggplot(res)
 
 
+violin_plot_single_question(data, 5, q_cols, jitter = F)
+plot_single_question(data, 5, q_cols, jitter=TRUE)

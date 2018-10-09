@@ -110,3 +110,63 @@ error_ggplot <- function(res){
     ggplot2::scale_color_manual(values=colp)+
     ggplot2::geom_text(data=subset(res_plot,n==max(res_plot$n)),ggplot2::aes(x=n,y=error,label=party,color=party),nudge_x = 1, nudge_y = 0, show.legend = FALSE)
 }
+
+#'Violin plot for distributions of candidates across questions
+#'
+#'Violin plots that show how candidates are distributed across questions (optionally across parties).
+#'
+#'@param data Data set to be used
+#'@param q_cols The columns defining questions
+#'@param partywise Logical. Do you want the plots per party? (Optional.) 
+#'
+#'@usage
+#'TODO:export
+violin_plot_for_questions <- function(data, q_cols, partywise=FALSE){
+  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
+  names(colp) <- parties
+  if(partywise){
+    party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+    df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
+    colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
+    df <- reshape2::melt(df, id.vars=party_col, measure.vars=paste("q",1:length(q_cols),sep=""), variable.name="question")
+    party_col_plot <- sym(party_col)
+    ggplot2::ggplot(df, aes(x=!!party_col_plot, y=value, fill=!!party_col_plot))+geom_violin()+
+      facet_wrap(vars(question),ncol=5)+ggplot2::theme_minimal()+ggplot2::scale_fill_manual(values=colp)
+  } else {
+    party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+    df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
+    colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
+    df <- reshape2::melt(df, id.vars=party_col, measure.vars=paste("q",1:length(q_cols),sep=""), variable.name="question")
+    ggplot2::ggplot(df, aes(x=1, y=value))+geom_violin()+ggplot2::facet_wrap(vars(question),ncol=5)+ggplot2::theme_minimal()
+  }
+}
+
+#'Plot for a single question and all parties
+#'
+#'Plot showing distribution of candidates of different parties for a single question
+#'
+#'@param data Dataset.
+#'@param q_num Question to be analyzed.
+#'#'@param q_cols The columns defining questions
+plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
+  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
+  names(colp) <- parties
+  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+  q_col <- paste0("q",q_num)
+  df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
+  colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
+  df <- dplyr::select(df, one_of(party_col, q_col))
+  df <- reshape2::melt(df, id.vars=party_col, measure.vars=q_col, variable.name="question")
+  party_col_plot <- sym(party_col)
+
+  p <- ggplot2::ggplot(df, aes(x=!!party_col_plot, y=value, fill=!!party_col_plot))+
+  stat_sum(geom="tile", aes(alpha=..prop..))+coord_fixed()+guides(alpha="legend", size="none")+
+  ggplot2::scale_alpha_continuous(breaks=seq(0.2,1,0.2),labels=seq(0.2,1,0.2))+
+  ggplot2::theme_minimal()+ggplot2::scale_color_manual(values=colp, aesthetics = c("colour","fill"))+
+  ggtitle(label = paste0(q_col,": ",q_cols[q_num]))+theme(legend.position = "bottom") 
+  
+  ifelse(jitter, print(p+geom_jitter(height = 0.2, width = 0.2,color="black")), print(p))
+
+ }
