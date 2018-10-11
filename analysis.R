@@ -27,7 +27,8 @@ fa <- PAF(data_fa, nfactors=2, vss=TRUE, cols=q_cols)
 FAplot(fa$scores, party_col, centers = FALSE, add=FALSE, pch=21, flip=0)
 
 #ggplot version
-FA_ggplot(fa,flip=20,colname_party = party_col)
+FA_ggplot(fa,flip=20,colname_party = party_col, encircle=FALSE)
+FA_ggplot(fa,flip=20,colname_party = party_col, encircle=TRUE)
 
 #save question text to another vector, replace dataframe header with q#
 qdata <- select(data, one_of(party_col, q_cols))

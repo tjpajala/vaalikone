@@ -79,10 +79,11 @@ FAplot<-function(fa_ans,party_col,centers=FALSE,add=FALSE,pch=21,flip=0,...){
 #' 
 #' @param fa The data frame including factor scores.
 #' @param flip Degrees to rotate axes (so that leftists are on the left, etc.) Default value 20 (works for HS data).
-#' 
+#' @param colname_party The column name that denotes party
+#' @param encircle Should candidates of each party be encircled with a polygon line? (Default: FALSE, because messy with >10 parties.)
 #' @usage FA_ggplot(PAF(data, 2, FALSE, names(select(data, q1:q30))),flip=20)
 #' @export
-FA_ggplot <- function(fa, flip=20, colname_party="party") {
+FA_ggplot <- function(fa, flip=20, colname_party=get_functional_column_name(fa, c("Party","party","puolue","Puolue")), encircle=FALSE) {
   var_unquo <- rlang::sym(colname_party)
   plt_data <- rot(fa$scores$PA1, fa$scores$PA2, flip=flip)
   fa$scores$PA1 <- plt_data[,1]
@@ -90,8 +91,13 @@ FA_ggplot <- function(fa, flip=20, colname_party="party") {
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
   colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
-  ggplot2::ggplot(fa$scores,ggplot2::aes(x=PA1, y=PA2, color=!!var_unquo))+ggplot2::geom_point()+
+  gg <- ggplot2::ggplot(fa$scores,ggplot2::aes(x=PA1, y=PA2, color=!!var_unquo))+ggplot2::geom_point()+
     ggplot2::scale_color_manual(values=colp)+ggplot2::coord_flip()+ggplot2::theme_classic()
+  if(!encircle){
+    print(gg)
+  } else {
+    print(gg + ggalt::geom_encircle(data=fa$scores, s_shape=0.5, expand=0, aes(x=PA1,y=PA2,color=!!var_unquo, group=!!var_unquo), fill=NA))
+  }
 }
 
 #'Plot classwise error by removed question with ggplot.
@@ -117,29 +123,21 @@ error_ggplot <- function(res){
 #'
 #'@param data Data set to be used
 #'@param q_cols The columns defining questions
-#'@param partywise Logical. Do you want the plots per party? (Optional.) 
 #'
 #'@usage
-#'TODO:export
-violin_plot_for_questions <- function(data, q_cols, partywise=FALSE){
+#'@export
+#@param partywise Logical. Do you want the plots per party? (Optional.) 
+plot_for_all_questions <- function(data, q_cols){
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
   colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
   names(colp) <- parties
-  if(partywise){
-    party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
-    df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
-    colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
-    df <- reshape2::melt(df, id.vars=party_col, measure.vars=paste("q",1:length(q_cols),sep=""), variable.name="question")
-    party_col_plot <- sym(party_col)
-    ggplot2::ggplot(df, aes(x=!!party_col_plot, y=value, fill=!!party_col_plot))+geom_violin()+
-      facet_wrap(vars(question),ncol=5)+ggplot2::theme_minimal()+ggplot2::scale_fill_manual(values=colp)
-  } else {
-    party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
-    df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
-    colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
-    df <- reshape2::melt(df, id.vars=party_col, measure.vars=paste("q",1:length(q_cols),sep=""), variable.name="question")
-    ggplot2::ggplot(df, aes(x=1, y=value))+geom_violin()+ggplot2::facet_wrap(vars(question),ncol=5)+ggplot2::theme_minimal()
-  }
+  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+  party_col_plot <- sym(party_col)
+  df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
+  ggplot2::ggplot(df, ggplot2::aes(x=question, y=value))+
+    geom_raster(stat="sum",aes(fill=..prop..))+scale_fill_distiller(type="seq", palette="BuGn",direction = 1)+
+    coord_fixed(ratio=2, ylim = c(0.6,5.4))+
+    theme_minimal()
 }
 
 #'Plot for a single question and all parties
@@ -148,7 +146,8 @@ violin_plot_for_questions <- function(data, q_cols, partywise=FALSE){
 #'
 #'@param data Dataset.
 #'@param q_num Question to be analyzed.
-#'#'@param q_cols The columns defining questions
+#'@param q_cols The columns defining questions
+#'@export
 plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
   colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
@@ -169,4 +168,31 @@ plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
   
   ifelse(jitter, print(p+geom_jitter(height = 0.2, width = 0.2,color="black")), print(p))
 
- }
+}
+
+#'Produce table about question variance
+#'
+#'Produces a table showcasing within-party and between-party variance for all the questions.
+#'
+#'@param data Dataset.
+#'@param q_cols Question columns
+#'@param cols_to_analyze (Optional.) Only a subset of q_cols, if that's all you want to look at. Default is all columns.
+#'@param functions_to_use (Optional.) What functions to analyze across parties? Default is "var".
+#'@return A table in tbl format.
+#'@usage table_question_variance(data, q_cols)
+#'@export
+table_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c("var")){
+  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+  party_col_sym <- sym(party_col)
+  df <- dplyr::select(data, one_of(party_col, q_cols))
+  colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
+  qtext <- q_cols
+  names(qtext) <- paste("q",1:length(q_cols),sep="")
+  q_idx <- paste("q",1:length(q_cols),sep="")[(q_cols %in% cols_to_analyze)]
+  ret <- group_by(df, !!party_col_sym) %>% summarise_at(.vars=q_idx,.funs=(functions_to_use))
+  total <- df %>% summarise_at(.vars=q_idx,.funs=(functions_to_use))
+  ret <- dplyr::bind_rows(ret, total)
+  ret[[party_col]] <- as.character(ret[[party_col]])
+  ret[nrow(ret),party_col] <- "all parties"
+  return(ret)
+}
