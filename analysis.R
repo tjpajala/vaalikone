@@ -20,7 +20,7 @@ data <- prepare_data(data, q_cols, party_col)
 
 
 #retain only party and q_cols for PAF
-data_fa <- data %>% select(., one_of(party_col, q_cols))
+data_fa <- data %>% dplyr::select(., dplyr::one_of(party_col, q_cols))
 fa <- PAF(data_fa, nfactors=2, vss=TRUE, cols=q_cols)
 
 #baseR version
@@ -31,12 +31,12 @@ FA_ggplot(fa,flip=20,colname_party = party_col, encircle=FALSE)
 FA_ggplot(fa,flip=20,colname_party = party_col, encircle=TRUE)
 
 #save question text to another vector, replace dataframe header with q#
-qdata <- select(data, one_of(party_col, q_cols))
+qdata <- dplyr::select(data, dplyr::one_of(party_col, q_cols))
 q_text <- q_cols
 colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
 
 
-rf<-randomForest(as.formula(paste0(party_col,"~.")),data=qdata,importance=TRUE)
+rf<-randomForest::randomForest(as.formula(paste0(party_col,"~.")),data=qdata,importance=TRUE)
 classComp(qdata,k=10, model="rf", party_col = party_col)
 
 ord<-order(rf$importance[,"MeanDecreaseGini"])

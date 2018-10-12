@@ -10,6 +10,10 @@ FA_ggplot(PAF(data, 2, FALSE, names(select(data, q1:q30))),flip=20)
 \item{fa}{The data frame including factor scores.}
 
 \item{flip}{Degrees to rotate axes (so that leftists are on the left, etc.) Default value 20 (works for HS data).}
+
+\item{colname_party}{The column name that denotes party}
+
+\item{encircle}{Should candidates of each party be encircled with a polygon line? (Default: FALSE, because messy with >10 parties.)}
 }
 \description{
 Plots points on a 2D coordinate scatter plot, based on their factor scores.

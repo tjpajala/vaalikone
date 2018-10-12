@@ -124,7 +124,7 @@ error_ggplot <- function(res){
 #'@param data Data set to be used
 #'@param q_cols The columns defining questions
 #'
-#'@usage
+#'@usage plot_for_all_questions(data, q_cols)
 #'@export
 #@param partywise Logical. Do you want the plots per party? (Optional.) 
 plot_for_all_questions <- function(data, q_cols){
@@ -144,9 +144,12 @@ plot_for_all_questions <- function(data, q_cols){
 #'
 #'Plot showing distribution of candidates of different parties for a single question
 #'
+#'Plots the distribution of candidates of different parties for a single question, as a combination
+#'of tile and jitter plots.
 #'@param data Dataset.
 #'@param q_num Question to be analyzed.
 #'@param q_cols The columns defining questions
+#'@usage plot_single_question(data, 5, q_cols, jitter=TRUE)
 #'@export
 plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
   parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
@@ -156,15 +159,16 @@ plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
   q_col <- paste0("q",q_num)
   df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
   colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
-  df <- dplyr::select(df, one_of(party_col, q_col))
+  df <- dplyr::select(df, dplyr::one_of(party_col, q_col))
   df <- reshape2::melt(df, id.vars=party_col, measure.vars=q_col, variable.name="question")
   party_col_plot <- sym(party_col)
 
-  p <- ggplot2::ggplot(df, aes(x=!!party_col_plot, y=value, fill=!!party_col_plot))+
-  stat_sum(geom="tile", aes(alpha=..prop..))+coord_fixed()+guides(alpha="legend", size="none")+
+  p <- ggplot2::ggplot(df, ggplot2::aes(x=!!party_col_plot, y=value, fill=!!party_col_plot))+
+  ggplot2::stat_sum(geom="tile", ggplot2::aes(alpha=..prop..))+ggplot2::coord_fixed()+
+    ggplot2::guides(alpha="legend", size="none")+
   ggplot2::scale_alpha_continuous(breaks=seq(0.2,1,0.2),labels=seq(0.2,1,0.2))+
   ggplot2::theme_minimal()+ggplot2::scale_color_manual(values=colp, aesthetics = c("colour","fill"))+
-  ggtitle(label = paste0(q_col,": ",q_cols[q_num]))+theme(legend.position = "bottom") 
+  ggtitle(label = paste0(q_col,": ",q_cols[q_num]))+ggplot2::theme(legend.position = "bottom") 
   
   ifelse(jitter, print(p+geom_jitter(height = 0.2, width = 0.2,color="black")), print(p))
 
@@ -184,13 +188,13 @@ plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
 table_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c("var")){
   party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
   party_col_sym <- sym(party_col)
-  df <- dplyr::select(data, one_of(party_col, q_cols))
+  df <- dplyr::select(data, dplyr::one_of(party_col, q_cols))
   colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))
   qtext <- q_cols
   names(qtext) <- paste("q",1:length(q_cols),sep="")
   q_idx <- paste("q",1:length(q_cols),sep="")[(q_cols %in% cols_to_analyze)]
-  ret <- group_by(df, !!party_col_sym) %>% summarise_at(.vars=q_idx,.funs=(functions_to_use))
-  total <- df %>% summarise_at(.vars=q_idx,.funs=(functions_to_use))
+  ret <- dplyr::group_by(df, !!party_col_sym) %>% dplyr::summarise_at(.vars=q_idx,.funs=(functions_to_use))
+  total <- df %>% dplyr::summarise_at(.vars=q_idx,.funs=(functions_to_use))
   ret <- dplyr::bind_rows(ret, total)
   ret[[party_col]] <- as.character(ret[[party_col]])
   ret[nrow(ret),party_col] <- "all parties"
@@ -212,10 +216,11 @@ plot_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, function
     stop("invalid argument: functions_to_use has to be length 1.")
   }
   res <- table_question_variance(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c(function_to_use))
-  res <- melt(res,id.vars = party_col)
+  res <- reshape2::melt(res,id.vars = party_col)
   party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
   party_col_sym <- sym(party_col)
-  ggplot(res,aes(x=variable,y=!!party_col_sym))+geom_tile(aes(fill=value))+scale_fill_distiller(type="seq", palette="BuGn",direction = -1)
+  ggplot2::ggplot(res,aes(x=variable,y=!!party_col_sym))+ggplot2::geom_tile(aes(fill=value))+
+    ggplot2::scale_fill_distiller(type="seq", palette="BuGn",direction = -1)
 }
 
 
@@ -239,8 +244,12 @@ get_text_for_variance_nmost <- function(data, q_cols, nmost=5, direction=-1, fun
     stop("invalid argument: functions_to_use has to be length 1.")
   }
   res <- table_question_variance(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c(function_to_use))
-  res <- melt(res,id.vars = party_col)
-  selected_q <- res %>% dplyr::filter(!!party_col_sym=="all parties") %>% top_n(direction*nmost,value) %>% select(variable) %>% pull()
+  res <- reshape2::melt(res,id.vars = party_col)
+  selected_q <- res %>% 
+    dplyr::filter(!!party_col_sym=="all parties") %>% 
+    dplyr::top_n(direction*nmost,value) %>% 
+    dplyr::select(variable) %>% 
+    dplyr::pull()
   qtext <- q_cols
   names(qtext) <- paste("q",1:length(q_cols),sep="")
   return(qtext[selected_q])

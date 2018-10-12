@@ -1,19 +1,17 @@
-#'Get the YLE 2015 candidate data
-#'
-#'Fetches and preprocesses the YLE 2015 candidate data.
-#'
-#'@return Tbl dataframe.
-#'@export
+#' Get the YLE 2015 candidate data
+#' 
+#' Fetches and preprocesses the YLE 2015 candidate data.
+#' @return Tbl dataframe.
+#' @export
 get_YLE_2015_data <- function(){
   data <- readr::read_csv2("http://data.yle.fi/dokumentit/Eduskuntavaalit2015/vastaukset_avoimena_datana.csv")
-  #replace spaces with _ because tidy evaluation doesn't like spaces
+  #replace spaces with _ because tidy evaluation does not like spaces
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
   #include only Helsinki
   data <- dplyr::filter(data, vaalipiiri=="01 Helsingin vaalipiiri")
   #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
-  
   return(data)
 }
 
