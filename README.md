@@ -24,14 +24,16 @@ data <- prepare_data(data, q_cols, party_col)
 
 #make a dataframe with just party and question data
 qdata <- select(data, one_of(party_col, q_cols))
-colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
 
 #run principal axis factoring
 fa <- PAF(qdata, nfactors=2, vss=TRUE, cols=q_cols)
 #plot candidates on the factor plot
-FA_ggplot(fa,flip=20,colname_party = party_col)
-
+FA_ggplot(fa,flip=20,colname_party = party_col, encircle=FALSE)
+```
+![Factor plot](/figs/fa_plot.png)
+``` r
 #analyze information value of questions
+colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
 res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], party_col=party_col)
 #plot class error by removed question
 error_ggplot(res)

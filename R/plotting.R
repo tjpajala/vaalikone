@@ -96,7 +96,7 @@ FA_ggplot <- function(fa, flip=20, colname_party=get_functional_column_name(fa, 
   if(!encircle){
     print(gg)
   } else {
-    print(gg + ggalt::geom_encircle(data=fa$scores, s_shape=0.5, expand=0, aes(x=PA1,y=PA2,color=!!var_unquo, group=!!var_unquo), fill=NA))
+    print(gg + ggalt::geom_encircle(data=fa$scores, s_shape=0.5, expand=0, ggplot2::aes(x=PA1,y=PA2,color=!!var_unquo, group=!!var_unquo), fill=NA))
   }
 }
 
@@ -195,4 +195,53 @@ table_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, functio
   ret[[party_col]] <- as.character(ret[[party_col]])
   ret[nrow(ret),party_col] <- "all parties"
   return(ret)
+}
+
+#'Plot question variance as a tile plot
+#'
+#'Analyzes question variance as in \code{\link{table_question_variance}} and plots the result as a tile plot.
+#'@param data Dataset.
+#'@param q_cols Question columns
+#'@param cols_to_analyze (Optional.) Only a subset of q_cols, if that's all you want to look at. Default is all columns.
+#'@param function_to_use (Optional.) What function to analyze across parties? Default is "var". Has to be length 1
+#'@param palette (Optional.) Colour palette for the plot. Default: "BuGn".
+#'@usage plot_question_variance(data, q_cols, cols_to_analyze=q_cols[1:5], functions_to_use="var")
+#'@export
+plot_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, function_to_use="var", palette="BuGn"){
+  if(length(function_to_use)>1){
+    stop("invalid argument: functions_to_use has to be length 1.")
+  }
+  res <- table_question_variance(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c(function_to_use))
+  res <- melt(res,id.vars = party_col)
+  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+  party_col_sym <- sym(party_col)
+  ggplot(res,aes(x=variable,y=!!party_col_sym))+geom_tile(aes(fill=value))+scale_fill_distiller(type="seq", palette="BuGn",direction = -1)
+}
+
+
+#'Get text for the questions with most or least variance
+#'
+#'Provides the question text for the \code{nmost} questions with either most(\code{direction=1}) or
+#'least (\code{direction=-1}) variance.
+#'
+#'@param data Dataset
+#'@param q_cols Question columns
+#'@param nmost (Optional.) How many questions to return? Default: 5
+#'@param direction (Optional.) Either most(\code{direction=1}) or least (\code{direction=-1}) variance. Default: -1
+#'@param function_to_use (Optional.) What function to use for analysis of variance? Default: "var"
+#'@usage get_text_for_variance_nmost(data, q_cols, 5, -1, "var")
+#'@export
+get_text_for_variance_nmost <- function(data, q_cols, nmost=5, direction=-1, function_to_use="var"){
+  if(!(direction %in% c(1,-1))){
+    stop("invalid argument: direction has to be either 1 or -1")
+  }
+  if(length(function_to_use)>1){
+    stop("invalid argument: functions_to_use has to be length 1.")
+  }
+  res <- table_question_variance(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c(function_to_use))
+  res <- melt(res,id.vars = party_col)
+  selected_q <- res %>% dplyr::filter(!!party_col_sym=="all parties") %>% top_n(direction*nmost,value) %>% select(variable) %>% pull()
+  qtext <- q_cols
+  names(qtext) <- paste("q",1:length(q_cols),sep="")
+  return(qtext[selected_q])
 }
