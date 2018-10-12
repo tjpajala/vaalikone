@@ -134,6 +134,9 @@ get_functional_column_name <- function(data, alternative_spellings){
 #'@return Tbl dataframe.
 #'@export
 get_dataset <- function(name){
+  if(name=="hs_2015"){
+    stop("HS dataset not implemented yet.")
+  }
   data <- switch (name,
           hs_2015=.get_HS_2015_data(),
           yle_2011=get_YLE_2011_data(),
