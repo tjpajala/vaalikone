@@ -8,6 +8,7 @@ You can install the released version of elecmachine from [github](https://github
 
 ``` r
 devtools::install_github("tjpajala/vaalikone")
+library(elecmachine)
 ```
 
 ## Example
