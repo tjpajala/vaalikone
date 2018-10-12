@@ -74,3 +74,5 @@ plot_single_question(data, 5, q_cols, jitter=TRUE)
 
 table_question_variance(data, q_cols)
 table_question_variance(data, q_cols, cols_to_analyze = q_cols[1:3], functions_to_use = c("mean","var"))
+
+plot_question_variance(data, q_cols)

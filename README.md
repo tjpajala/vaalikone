@@ -38,3 +38,19 @@ res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], 
 #plot class error by removed question
 error_ggplot(res)
 ```
+![Class prediction error plot](/figs/class_error_by_question.png)
+```r
+#plot distribution of answers for a question
+plot_single_question(data, 5, q_cols, jitter=TRUE)
+```
+![Distribution of candidates, jittered](/figs/question_jitter.png)
+```r
+#table of question variance across parties (and total)
+table_question_variance(data, q_cols)
+```
+The same table can be turned into a tile plot:
+```r
+#plot of question variance across parties (and total)
+plot_question_variance(data, q_cols)
+```
+![Distribution of candidates, jittered](/figs/question_variance.png)
