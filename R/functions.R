@@ -157,8 +157,8 @@ get_dataset <- function(name){
 get_data_cols <- function(dataset_name,data){
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
-                       yle_2015 = stringr::str_subset(names(data), "[:digit:]+\\|[:upper:]"),
-                       yle_2011 = stringr::str_subset(names(data), "[:digit:]+\\.")
+                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:]"),
+                       yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.].")
   )
   return(data_cols)
 }
