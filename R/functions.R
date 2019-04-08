@@ -4,13 +4,13 @@
 #'@param filter_precinct Vector of precincts to include. Defaults to "01 Helsingin vaalipiiri".
 #' @return Tbl dataframe.
 #' @export
-get_YLE_2015_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
+get_YLE_2015_data <- function(filter_precinct=NULL){
   data <- readr::read_csv2("http://data.yle.fi/dokumentit/Eduskuntavaalit2015/vastaukset_avoimena_datana.csv")
   #replace spaces with _ because tidy evaluation does not like spaces
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
   #include only Helsinki?
-  if(filter_precinct!=NULL){
+  if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
   }
   #drop columns with all NAs
@@ -22,18 +22,18 @@ get_YLE_2015_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
 #'Get the YLE 2011 candidate data
 #'
 #'Fetches and preprocesses the YLE 2011 candidate data.
-#'#'@param filter_precinct Vector of precincts to include. Defaults to "01 Helsingin vaalipiiri".
+#'#'@param filter_precinct Vector of precincts to include. Defaults to NULL.
 #'
 #'@return Tbl dataframe.
 #'@export
-get_YLE_2011_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
+get_YLE_2011_data <- function(filter_precinct=NULL){
   data <- readr::read_csv("https://docs.google.com/spreadsheets/d/1yOLYmnWXtIutqpojnvktnDpBdAxtNzcsc5MLlbAxNfg/gviz/tq?tqx=out:csv",
                           col_types = paste0(rep("c",108),sep="",collapse=""))
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$Vaalipiiri <- as.factor(data$Vaalipiiri)
   #include only Helsinki?
-  if(filter_precinct!=NULL){
-    data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
+  if(!is.null(filter_precinct)){
+    data <- dplyr::filter(data, Vaalipiiri%in%filter_precinct)
   }  #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
   
@@ -46,7 +46,7 @@ get_YLE_2011_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
 #'@param filter_precinct Vector of precincts to include. Defaults to "Helsingin vaalipiiri".
 #'@return Tbl dataframe.
 #'@export
-get_YLE_2019_data <- function(filter_precinct=c("Helsingin vaalipiiri")){
+get_YLE_2019_data <- function(filter_precinct=NULL){
   temp <- tempfile()
   download.file("https://vaalit.beta.yle.fi/avoindata/avoin_data_eduskuntavaalit_2019.zip",temp)
   temp <- unzip(temp)
@@ -54,7 +54,7 @@ get_YLE_2019_data <- function(filter_precinct=c("Helsingin vaalipiiri")){
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
   #include only Helsinki
-  if(filter_precinct!=NULL){
+  if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
   }
   #drop columns with all NAs
@@ -160,15 +160,15 @@ get_functional_column_name <- function(data, alternative_spellings){
 #'
 #'@return Tbl dataframe.
 #'@export
-get_dataset <- function(name){
+get_dataset <- function(name,filter_precinct=NULL){
   if(name=="hs_2015"){
     stop("HS dataset not implemented yet.")
   }
   data <- switch (name,
-          hs_2015=.get_HS_2015_data(),
-          yle_2011=get_YLE_2011_data(),
-          yle_2015=get_YLE_2015_data(),
-          yle_2019=get_YLE_2019_data()
+          hs_2015=.get_HS_2015_data(filter_precinct=filter_precinct),
+          yle_2011=get_YLE_2011_data(filter_precinct=filter_precinct),
+          yle_2015=get_YLE_2015_data(filter_precinct=filter_precinct),
+          yle_2019=get_YLE_2019_data(filter_precinct=filter_precinct)
           )
   
   return(data)
