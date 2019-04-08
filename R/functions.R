@@ -1,15 +1,18 @@
 #' Get the YLE 2015 candidate data
 #' 
 #' Fetches and preprocesses the YLE 2015 candidate data.
+#'@param filter_precinct Vector of precincts to include. Defaults to "01 Helsingin vaalipiiri".
 #' @return Tbl dataframe.
 #' @export
-get_YLE_2015_data <- function(){
+get_YLE_2015_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
   data <- readr::read_csv2("http://data.yle.fi/dokumentit/Eduskuntavaalit2015/vastaukset_avoimena_datana.csv")
   #replace spaces with _ because tidy evaluation does not like spaces
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
-  #include only Helsinki
-  data <- dplyr::filter(data, vaalipiiri=="01 Helsingin vaalipiiri")
+  #include only Helsinki?
+  if(filter_precinct!=NULL){
+    data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
+  }
   #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
   return(data)
@@ -19,22 +22,46 @@ get_YLE_2015_data <- function(){
 #'Get the YLE 2011 candidate data
 #'
 #'Fetches and preprocesses the YLE 2011 candidate data.
+#'#'@param filter_precinct Vector of precincts to include. Defaults to "01 Helsingin vaalipiiri".
 #'
 #'@return Tbl dataframe.
 #'@export
-get_YLE_2011_data <- function(){
+get_YLE_2011_data <- function(filter_precinct=c("01 Helsingin vaalipiiri")){
   data <- readr::read_csv("https://docs.google.com/spreadsheets/d/1yOLYmnWXtIutqpojnvktnDpBdAxtNzcsc5MLlbAxNfg/gviz/tq?tqx=out:csv",
                           col_types = paste0(rep("c",108),sep="",collapse=""))
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$Vaalipiiri <- as.factor(data$Vaalipiiri)
-  #include only Helsinki
-  data <- dplyr::filter(data, Vaalipiiri=="01 Helsingin vaalipiiri")
-  #drop columns with all NAs
+  #include only Helsinki?
+  if(filter_precinct!=NULL){
+    data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
+  }  #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
   
   return(data)
 }
 
+#'Get the YLE 2019 candidate data
+#'
+#'Fetches and preprocesses the YLE 2019 candidate data.
+#'@param filter_precinct Vector of precincts to include. Defaults to "Helsingin vaalipiiri".
+#'@return Tbl dataframe.
+#'@export
+get_YLE_2019_data <- function(filter_precinct=c("Helsingin vaalipiiri")){
+  temp <- tempfile()
+  download.file("https://vaalit.beta.yle.fi/avoindata/avoin_data_eduskuntavaalit_2019.zip",temp)
+  temp <- unzip(temp)
+  data <- readr::read_csv(temp[1], col_types = paste0(rep("c",211),sep="",collapse=""))
+  names(data) <- stringr::str_replace_all(names(data), " ", "_")
+  data$vaalipiiri <- as.factor(data$vaalipiiri)
+  #include only Helsinki
+  if(filter_precinct!=NULL){
+    data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
+  }
+  #drop columns with all NAs
+  data <- data[,colSums(!is.na(data))>0]
+  
+  return(data)
+}
 
 #'Get the HS data
 #'
@@ -129,7 +156,7 @@ get_functional_column_name <- function(data, alternative_spellings){
 #'
 #'Convenience function for loading the required dataset.
 #'
-#'@param name Dataset name (options: "yle_2011", "yle_2015", "hs_2015")
+#'@param name Dataset name (options: "yle_2011", "yle_2015", "hs_2015", "yle_2019")
 #'
 #'@return Tbl dataframe.
 #'@export
@@ -140,7 +167,8 @@ get_dataset <- function(name){
   data <- switch (name,
           hs_2015=.get_HS_2015_data(),
           yle_2011=get_YLE_2011_data(),
-          yle_2015=get_YLE_2015_data()
+          yle_2015=get_YLE_2015_data(),
+          yle_2019=get_YLE_2019_data()
           )
   
   return(data)
@@ -148,17 +176,45 @@ get_dataset <- function(name){
 
 #'Get the question columns for the specified data set
 #'
-#'@param dataset_name Name of the dataset ('yle_2011', 'yle_2015' or 'hs_2015')
+#'@param dataset_name Name of the dataset ('yle_2011', 'yle_2015', 'yle_2019 or 'hs_2015')
 #'
 #'@usage q_cols <- get_data_cols('yle_2011', data)
 #'
 #'@return List of columns that represent the questions.
 #'@export
 get_data_cols <- function(dataset_name,data){
+  yle_2019_q_list <- c(
+    "Suomen pitää olla edelläkävijä ilmastonmuutoksen vastaisessa taistelussa, vaikka se aiheuttaisi suomalaisille kustannuksia.",
+    "Suomen ei pidä kiirehtiä kieltämään uusien bensa- ja dieselautojen myyntiä.",
+  "Valtion pitää ohjata suomalaiset syömään vähemmän lihaa esimerkiksi verotuksen avulla.",
+    "Metsiä hakataan Suomessa liikaa.",
+    "Kun valtion menoja ja tuloja tasapainotetaan, se on tehtävä mieluummin menoja karsimalla kuin veroja kiristämällä.",
+    "Sosiaaliturvaa tulee kehittää niin, että osa nykyisistä tuista korvataan kaikille työikäisille maksettavalla, vastikkeettomalla perustulolla.",
+  "Euron ulkopuolella Suomi pärjäisi paremmin.",
+    "Sosiaali- ja terveyspalvelut on tuotettava ensisijaisesti julkisina palveluina.",
+    "Vanhustenhoidon ulkoistamista yksityisille toimijoille tulee lisätä.",
+    "Parantumattomasti sairaalla on oltava oikeus eutanasiaan.",
+    "Sukupuolen korjaamisen tulee olla mahdollista myös alle 18-vuotiaille.",
+    "Viinit ja vahvat oluet pitää saada ruokakauppoihin.",
+    "Perhevapaita pitää uudistaa niin, että vapaat jakautuvat tasan vanhempien kesken.",
+    "Oppivelvollisuus pitää ulottaa myös ammatilliseen koulutukseen ja lukioon.",
+    "Koulujen kesälomia tulee siirtää kahdella viikolla niin, että ne alkavat kesäkuun puolivälissä ja päättyvät elokuun lopulla.",
+    "Korkeakoulujen määrää pitää vähentää ja vapautuneet voimavarat käyttää huippuopetukseen ja -tutkimukseen.",
+    "Maahanmuuttajien määrän kasvu on lisännyt turvattomuutta Suomessa.",
+    "Sosiaali- ja terveyspalveluiden rahoittaminen vaatii työperäisen maahanmuuton merkittävää lisäämistä.",
+    "Nato-jäsenyys vahvistaisi Suomen turvallisuuspoliittista asemaa.",
+    "Vihapuhe tulee määritellä ja asettaa rangaistavaksi rikoslaissa.",
+    "Perinteiset arvot ovat hyvän elämän perusta.",
+    "Suomessa tarvitaan nyt koviakin keinoja järjestyksen ja tavallisten ihmisten puolustamiseksi.",
+    "On oikein, että yhteiskunnassa jotkut ryhmät ovat paremmassa asemassa kuin toiset.",
+    "Suomen lakien pitäisi nykyistä vapaammin antaa ihmisten tehdä omat ratkaisunsa ja kantaa niiden seuraukset.",
+    "Poliitikon velvollisuus on ennen kaikkea ajaa omien äänestäjiensä etuja."
+  )
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
                        yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:]"),
-                       yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.].")
+                       yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.]."),
+                       yle_2019 = str_replace_all(yle_2019_q_list," ","_")
   )
   return(data_cols)
 }
@@ -170,14 +226,14 @@ get_data_cols <- function(dataset_name,data){
 #'
 #'@param data Dataset.
 #'@param q_cols Question columns. See \code{\link{get_data_cols}}.
-#'
+#'@param limit Candidate limit for setting party column to other.
 #'@return Dataset with subbed and factored party columns, and numeric question cols.
 #'
 #'@usage data <- prepare_data(data, q_cols, party_col)
 #'@export
-prepare_data <- function(data, q_cols, party_col){
+prepare_data <- function(data, q_cols, party_col,limit){
   data[[party_col]] <- sub_parties_for_shortcodes(data[[party_col]])
-  data[[party_col]] <- set_small_parties_to_other(data,colname_party = party_col)
+  data[[party_col]] <- set_small_parties_to_other(data,colname_party = party_col, limit = limit)
   data[[party_col]] <- factor(data[[party_col]])
   
   #turn string answers to numeric if necessary
@@ -197,17 +253,17 @@ prepare_data <- function(data, q_cols, party_col){
 #'
 #' @param data Data set to be used (either tbl or dataframe)
 #' @param colname_party Column name that has the party information (default is "party")
-#' 
+#' @param limit Candidate limit for setting party membership to "Other". Default: 10
 #' @return Returns the party column
 #' 
 #' @usage
 #' df$party <- set_small_parties_to_other(df, "party")
 #' 
 #' @export  
-set_small_parties_to_other <- function(data, colname_party="party"){
+set_small_parties_to_other <- function(data, colname_party="party",limit=10){
   data[[colname_party]] <- factor(data[[colname_party]])
   var_unquo <- rlang::sym(colname_party)
-  big_parties<-data[,colname_party] %>% dplyr::count(!!var_unquo) %>% dplyr::filter(n>10) %>% dplyr::pull(!!var_unquo)
+  big_parties<-data[,colname_party] %>% dplyr::count(!!var_unquo) %>% dplyr::filter(n>limit) %>% dplyr::pull(!!var_unquo)
   data[,colname_party] <- forcats::fct_other(data[[colname_party]],keep=big_parties,other_level = "Other")
   return(data[[colname_party]])
 }
