@@ -165,7 +165,7 @@ get_dataset <- function(name,filter_precinct=NULL){
     stop("HS dataset not implemented yet.")
   }
   data <- switch (name,
-          hs_2015=.get_HS_2015_data(filter_precinct=filter_precinct),
+          hs_2015=.get_HS_2015_data(),
           yle_2011=get_YLE_2011_data(filter_precinct=filter_precinct),
           yle_2015=get_YLE_2015_data(filter_precinct=filter_precinct),
           yle_2019=get_YLE_2019_data(filter_precinct=filter_precinct)
