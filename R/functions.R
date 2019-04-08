@@ -214,7 +214,7 @@ get_data_cols <- function(dataset_name,data){
                        hs_2015 = names(dplyr::select(data, q1:q30)),
                        yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:]"),
                        yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.]."),
-                       yle_2019 = str_replace_all(yle_2019_q_list," ","_")
+                       yle_2019 = stringr::str_replace_all(yle_2019_q_list," ","_")
   )
   return(data_cols)
 }
