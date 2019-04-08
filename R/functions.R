@@ -51,6 +51,7 @@ get_YLE_2019_data <- function(filter_precinct=NULL){
   download.file("https://vaalit.beta.yle.fi/avoindata/avoin_data_eduskuntavaalit_2019.zip",temp)
   temp <- unzip(temp)
   data <- readr::read_csv(temp[1], col_types = paste0(rep("c",211),sep="",collapse=""))
+  names(data)<-stringr::str_replace_all(names(data),"[:punct:]",".")
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
   #include only Helsinki
@@ -184,31 +185,31 @@ get_dataset <- function(name,filter_precinct=NULL){
 #'@export
 get_data_cols <- function(dataset_name,data){
   yle_2019_q_list <- c(
-    "Suomen pitää olla edelläkävijä ilmastonmuutoksen vastaisessa taistelussa, vaikka se aiheuttaisi suomalaisille kustannuksia.",
-    "Suomen ei pidä kiirehtiä kieltämään uusien bensa- ja dieselautojen myyntiä.",
-  "Valtion pitää ohjata suomalaiset syömään vähemmän lihaa esimerkiksi verotuksen avulla.",
-    "Metsiä hakataan Suomessa liikaa.",
-    "Kun valtion menoja ja tuloja tasapainotetaan, se on tehtävä mieluummin menoja karsimalla kuin veroja kiristämällä.",
-    "Sosiaaliturvaa tulee kehittää niin, että osa nykyisistä tuista korvataan kaikille työikäisille maksettavalla, vastikkeettomalla perustulolla.",
-  "Euron ulkopuolella Suomi pärjäisi paremmin.",
-    "Sosiaali- ja terveyspalvelut on tuotettava ensisijaisesti julkisina palveluina.",
-    "Vanhustenhoidon ulkoistamista yksityisille toimijoille tulee lisätä.",
-    "Parantumattomasti sairaalla on oltava oikeus eutanasiaan.",
-    "Sukupuolen korjaamisen tulee olla mahdollista myös alle 18-vuotiaille.",
-    "Viinit ja vahvat oluet pitää saada ruokakauppoihin.",
-    "Perhevapaita pitää uudistaa niin, että vapaat jakautuvat tasan vanhempien kesken.",
-    "Oppivelvollisuus pitää ulottaa myös ammatilliseen koulutukseen ja lukioon.",
-    "Koulujen kesälomia tulee siirtää kahdella viikolla niin, että ne alkavat kesäkuun puolivälissä ja päättyvät elokuun lopulla.",
-    "Korkeakoulujen määrää pitää vähentää ja vapautuneet voimavarat käyttää huippuopetukseen ja -tutkimukseen.",
-    "Maahanmuuttajien määrän kasvu on lisännyt turvattomuutta Suomessa.",
-    "Sosiaali- ja terveyspalveluiden rahoittaminen vaatii työperäisen maahanmuuton merkittävää lisäämistä.",
-    "Nato-jäsenyys vahvistaisi Suomen turvallisuuspoliittista asemaa.",
-    "Vihapuhe tulee määritellä ja asettaa rangaistavaksi rikoslaissa.",
-    "Perinteiset arvot ovat hyvän elämän perusta.",
-    "Suomessa tarvitaan nyt koviakin keinoja järjestyksen ja tavallisten ihmisten puolustamiseksi.",
-    "On oikein, että yhteiskunnassa jotkut ryhmät ovat paremmassa asemassa kuin toiset.",
-    "Suomen lakien pitäisi nykyistä vapaammin antaa ihmisten tehdä omat ratkaisunsa ja kantaa niiden seuraukset.",
-    "Poliitikon velvollisuus on ennen kaikkea ajaa omien äänestäjiensä etuja."
+     "Suomen_pitää_olla_edelläkävijä_ilmastonmuutoksen_vastaisessa_taistelussa._vaikka_se_aiheuttaisi_suomalaisille_kustannuksia.",                  
+     "Suomen_ei_pidä_kiirehtiä_kieltämään_uusien_bensa._ja_dieselautojen_myyntiä.",                                                                  
+     "Valtion_pitää_ohjata_suomalaiset_syömään_vähemmän_lihaa_esimerkiksi_verotuksen_avulla.",                                                       
+     "Metsiä_hakataan_Suomessa_liikaa.",                                                                                                             
+     "Kun_valtion_menoja_ja_tuloja_tasapainotetaan._se_on_tehtävä_mieluummin_menoja_karsimalla_kuin_veroja_kiristämällä.",                           
+     "Sosiaaliturvaa_tulee_kehittää_niin._että_osa_nykyisistä_tuista_korvataan_kaikille_työikäisille_maksettavalla._vastikkeettomalla_perustulolla.",
+     "Euron_ulkopuolella_Suomi_pärjäisi_paremmin.",                                                                                                  
+     "Sosiaali._ja_terveyspalvelut_on_tuotettava_ensisijaisesti_julkisina_palveluina.",                                                              
+     "Vanhustenhoidon_ulkoistamista_yksityisille_toimijoille_tulee_lisätä.",                                                                         
+     "Parantumattomasti_sairaalla_on_oltava_oikeus_eutanasiaan.",                                                                                    
+     "Sukupuolen_korjaamisen_tulee_olla_mahdollista_myös_alle_18.vuotiaille.",                                                                       
+     "Viinit_ja_vahvat_oluet_pitää_saada_ruokakauppoihin.",                                                                                          
+     "Perhevapaita_pitää_uudistaa_niin._että_vapaat_jakautuvat_tasan_vanhempien_kesken.",                                                            
+     "Oppivelvollisuus_pitää_ulottaa_myös_ammatilliseen_koulutukseen_ja_lukioon.",                                                                   
+     "Koulujen_kesälomia_tulee_siirtää_kahdella_viikolla_niin._että_ne_alkavat_kesäkuun_puolivälissä_ja_päättyvät_elokuun_lopulla.",                 
+     "Korkeakoulujen_määrää_pitää_vähentää_ja_vapautuneet_voimavarat_käyttää_huippuopetukseen_ja_.tutkimukseen.",                                    
+     "Maahanmuuttajien_määrän_kasvu_on_lisännyt_turvattomuutta_Suomessa.",                                                                           
+     "Sosiaali._ja_terveyspalveluiden_rahoittaminen_vaatii_työperäisen_maahanmuuton_merkittävää_lisäämistä.",                                        
+     "Nato.jäsenyys_vahvistaisi_Suomen_turvallisuuspoliittista_asemaa.",                                                                             
+     "Vihapuhe_tulee_määritellä_ja_asettaa_rangaistavaksi_rikoslaissa.",                                                                             
+     "Perinteiset_arvot_ovat_hyvän_elämän_perusta.",                                                                                                 
+     "Suomessa_tarvitaan_nyt_koviakin_keinoja_järjestyksen_ja_tavallisten_ihmisten_puolustamiseksi.",                                                
+   "On_oikein._että_yhteiskunnassa_jotkut_ryhmät_ovat_paremmassa_asemassa_kuin_toiset.",                                                           
+     "Suomen_lakien_pitäisi_nykyistä_vapaammin_antaa_ihmisten_tehdä_omat_ratkaisunsa_ja_kantaa_niiden_seuraukset.",                                  
+     "Poliitikon_velvollisuus_on_ennen_kaikkea_ajaa_omien_äänestäjiensä_etuja." 
   )
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
