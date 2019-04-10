@@ -2,13 +2,20 @@
 % Please edit documentation in R/functions.R
 \name{get_YLE_2015_data}
 \alias{get_YLE_2015_data}
-\title{Get the YLE 2015 candidate data}
+\title{Get the YLE 2015 candidate data.
+ 
+Fetches and preprocesses the YLE 2015 candidate data.}
 \usage{
-get_YLE_2015_data()
+get_YLE_2015_data(filter_precinct = NULL)
+}
+\arguments{
+\item{filter_precinct}{Vector of precincts to include. Defaults to no restriction.}
 }
 \value{
 Tbl dataframe.
 }
 \description{
+Get the YLE 2015 candidate data.
+ 
 Fetches and preprocesses the YLE 2015 candidate data.
 }

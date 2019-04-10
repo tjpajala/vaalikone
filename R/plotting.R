@@ -17,7 +17,17 @@ rot<-function(x,y,flip){
   return(cbind(x2,y2))
 }
 
-
+#'Get color scheme for parties
+#'
+#'Returns the defined color scheme for parties.
+#'
+#'@export
+get_colors <- function(){
+  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP","FP","STL","KP","ST","LIB","EOP","LN","SIT","SKE")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1","hotpink","olivedrab3","slateblue4","royalblue","turquoise4","gold2","magenta4","wheat4","skyblue1")
+  names(colp)<-parties
+  return(colp)
+}
 
 #'Plot party candidates on a 2D factor plot
 #'
@@ -35,8 +45,9 @@ rot<-function(x,y,flip){
 #'@usage FAplot(PAF(data, 2, FALSE, names(select(data, q1:q30))), centers=FALSE, add=FALSE)
 #'@export
 FAplot<-function(fa_ans,party_col,centers=FALSE,add=FALSE,pch=21,flip=0,...){
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
+  colors <- get_colors()
+  parties<-names(colors)
+  colp=colors
   
   #plot FA with two factors
   if(centers==TRUE){
@@ -88,9 +99,9 @@ FA_ggplot <- function(fa, flip=20, colname_party=get_functional_column_name(fa, 
   plt_data <- rot(fa$scores$PA1, fa$scores$PA2, flip=flip)
   fa$scores$PA1 <- plt_data[,1]
   fa$scores$PA2 <- plt_data[,2]
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
-  names(colp) <- parties
+  colors <- get_colors()
+  parties<-names(colors)
+  colp=colors
   gg <- ggplot2::ggplot(fa$scores,ggplot2::aes(x=PA1, y=PA2, color=!!var_unquo))+ggplot2::geom_point()+
     ggplot2::scale_color_manual(values=colp)+ggplot2::coord_flip()+ggplot2::theme_classic()
   if(!encircle){
@@ -108,9 +119,9 @@ error_ggplot <- function(res){
   res$n <- seq.int(nrow(res))
   res_plot <- reshape2::melt(res,id.vars="n",variable.name = "party",value.name = "error")
   res_plot <- res_plot[res_plot$party!="removed",]
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
-  names(colp) <- parties
+  colors <- get_colors()
+  parties<-names(colors)
+  colp=colors
   ggplot2::ggplot(res_plot,ggplot2::aes(x=n, y=error, color=party))+ggplot2::geom_line()+ggplot2::theme_minimal()+
     ggplot2::stat_summary(fun.y=mean, geom="line", linetype="dashed", colour="black")+
     ggplot2::scale_color_manual(values=colp)+
@@ -128,9 +139,9 @@ error_ggplot <- function(res){
 #'@export
 #@param partywise Logical. Do you want the plots per party? (Optional.) 
 plot_for_all_questions <- function(data, q_cols){
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
-  names(colp) <- parties
+  colors <- get_colors()
+  parties<-names(colors)
+  colp=colors
   party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
   party_col_plot <- sym(party_col)
   df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
@@ -152,9 +163,9 @@ plot_for_all_questions <- function(data, q_cols){
 #'@usage plot_single_question(data, 5, q_cols, jitter=TRUE)
 #'@export
 plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1")
-  names(colp) <- parties
+  colors <- get_colors()
+  parties<-names(colors)
+  colp=colors
   party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
   q_col <- paste0("q",q_num)
   df <- dplyr::select(data, dplyr::one_of(party_col,q_cols))
@@ -186,7 +197,7 @@ plot_single_question <- function(data, q_num, q_cols, jitter=TRUE){
 #'@usage table_question_variance(data, q_cols)
 #'@export
 table_question_variance <- function(data, q_cols,cols_to_analyze=q_cols, functions_to_use=c("var")){
-  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+  party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party","Party"))
   party_col_sym <- sym(party_col)
   df <- dplyr::select(data, dplyr::one_of(party_col, q_cols))
   colnames(df) <- c(party_col,paste("q",1:length(q_cols),sep=""))

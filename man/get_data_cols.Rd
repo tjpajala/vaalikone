@@ -7,7 +7,7 @@
 q_cols <- get_data_cols('yle_2011', data)
 }
 \arguments{
-\item{dataset_name}{Name of the dataset ('yle_2011', 'yle_2015' or 'hs_2015')}
+\item{dataset_name}{Name of the dataset ('yle_2011', 'yle_2015', 'yle_2019 or 'hs_2015')}
 }
 \value{
 List of columns that represent the questions.

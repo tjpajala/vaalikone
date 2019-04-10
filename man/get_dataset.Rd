@@ -4,10 +4,10 @@
 \alias{get_dataset}
 \title{Get the required data set}
 \usage{
-get_dataset(name)
+get_dataset(name, filter_precinct = NULL)
 }
 \arguments{
-\item{name}{Dataset name (options: "yle_2011", "yle_2015", "hs_2015")}
+\item{name}{Dataset name (options: "yle_2011", "yle_2015", "hs_2015", "yle_2019")}
 }
 \value{
 Tbl dataframe.

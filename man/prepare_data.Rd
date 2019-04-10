@@ -10,6 +10,8 @@ data <- prepare_data(data, q_cols, party_col)
 \item{data}{Dataset.}
 
 \item{q_cols}{Question columns. See \code{\link{get_data_cols}}.}
+
+\item{limit}{Candidate limit for setting party column to other.}
 }
 \value{
 Dataset with subbed and factored party columns, and numeric question cols.

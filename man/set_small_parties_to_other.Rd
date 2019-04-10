@@ -10,6 +10,8 @@ df$party <- set_small_parties_to_other(df, "party")
 \item{data}{Data set to be used (either tbl or dataframe)}
 
 \item{colname_party}{Column name that has the party information (default is "party")}
+
+\item{limit}{Candidate limit for setting party membership to "Other". Default: 10}
 }
 \value{
 Returns the party column

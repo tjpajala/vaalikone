@@ -4,7 +4,10 @@
 \alias{get_YLE_2011_data}
 \title{Get the YLE 2011 candidate data}
 \usage{
-get_YLE_2011_data()
+get_YLE_2011_data(filter_precinct = NULL)
+}
+\arguments{
+\item{filter_precinct}{Vector of precincts to include. Defaults to NULL.}
 }
 \value{
 Tbl dataframe.

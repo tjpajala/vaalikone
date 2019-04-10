@@ -1,15 +1,16 @@
-#' Get the YLE 2015 candidate data
+#'Get the YLE 2015 candidate data.
 #' 
-#' Fetches and preprocesses the YLE 2015 candidate data.
-#'@param filter_precinct Vector of precincts to include. Defaults to "01 Helsingin vaalipiiri".
-#' @return Tbl dataframe.
-#' @export
+#'Fetches and preprocesses the YLE 2015 candidate data.
+#'
+#'@param filter_precinct Vector of precincts to include. Defaults to no restriction.
+#'@return Tbl dataframe.
+#'@export
 get_YLE_2015_data <- function(filter_precinct=NULL){
   data <- readr::read_csv2("http://data.yle.fi/dokumentit/Eduskuntavaalit2015/vastaukset_avoimena_datana.csv")
   #replace spaces with _ because tidy evaluation does not like spaces
   names(data) <- stringr::str_replace_all(names(data), " ", "_")
   data$vaalipiiri <- as.factor(data$vaalipiiri)
-  #include only Helsinki?
+  #include only named precints
   if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
   }
@@ -22,7 +23,7 @@ get_YLE_2015_data <- function(filter_precinct=NULL){
 #'Get the YLE 2011 candidate data
 #'
 #'Fetches and preprocesses the YLE 2011 candidate data.
-#'#'@param filter_precinct Vector of precincts to include. Defaults to NULL.
+#'@param filter_precinct Vector of precincts to include. Defaults to NULL.
 #'
 #'@return Tbl dataframe.
 #'@export
@@ -213,7 +214,7 @@ get_data_cols <- function(dataset_name,data){
   )
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
-                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:]"),
+                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:](?!okeri-kysymys)"),
                        yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.]."),
                        yle_2019 = stringr::str_replace_all(yle_2019_q_list," ","_")
   )
@@ -291,7 +292,7 @@ set_small_parties_to_other <- function(data, colname_party="party",limit=10){
 #' @export
 PAF<-function(data,nfactors,vss,cols){
   #bivariate correlations
-  bcor<-stats::cor(data[,cols])
+  bcor<-stats::cor(scale(data[,cols]))
   det(bcor)
   
   #KMO test & anti-image
@@ -304,12 +305,12 @@ PAF<-function(data,nfactors,vss,cols){
   #FA with nfactors factors
   fact<-psych::fa(bcor,nfactors=nfactors,fm="pa",n.obs=nrow(data),rotate="varimax",scores=TRUE,SMC=FALSE)
   #print(fact)
-  f2<-psych::factor.scores(data[,cols],fact$loadings)
+  f2<-psych::factor.scores(scale(data[,cols]),fact$loadings)
   
   #save F2 scores to data
   fa_ans<-data.frame(cbind(data,f2$scores))
   
-  return(list("scores"=fa_ans,"corr"=bcor,"det"=det(bcor),"KMO"=kmo,"loadings"=fact$loadings))
+  return(list("scores"=fa_ans,"corr"=bcor,"det"=det(bcor),"KMO"=kmo,"loadings"=fact$loadings,"fa"=fact))
 }
 
 
@@ -324,8 +325,8 @@ PAF<-function(data,nfactors,vss,cols){
 sub_parties_for_shortcodes <- function(datacol){
   #get rid of extra party names inside brackets inside the party columns
   datacol <- stringr::str_replace(datacol," [:punct:].+[:punct:]","")
-  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP")
-  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue")
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin")
   names(short_parties) <- parties
   parties_c <- stringr::str_c("^",parties,collapse = "|")
   party_repl <- function(p){

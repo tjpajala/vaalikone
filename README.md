@@ -17,11 +17,12 @@ This is a basic example which shows you how to get the YLE 2015 data set, and pe
 basic analysis on it:
 
 ``` r
-dataset_name <- "yle_2015" #options: hs_2015, yle_2011
-data <- get_dataset(name=dataset_name)
-party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party"))
+dataset_name <- "yle_2015" #options: hs_2015, yle_2011, yle_2019
+data <- get_dataset(name=dataset_name,filter_precinct=c("01 Helsingin vaalipiiri"))
+party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party","Party"))
 q_cols=get_data_cols(dataset_name = dataset_name, data=data)
-data <- prepare_data(data, q_cols, party_col)
+#combine all parties with less than 10 members
+data <- prepare_data(data, q_cols, party_col, limit=10)
 
 #make a dataframe with just party and question data
 qdata <- select(data, one_of(party_col, q_cols))
@@ -35,6 +36,10 @@ FA_ggplot(fa,flip=20,colname_party = party_col, encircle=FALSE)
 ``` r
 #analyze information value of questions
 colnames(qdata) <- c(party_col,paste("q",1:length(q_cols),sep=""))
+rf<-randomForest::randomForest(as.formula(paste0(party_col,"~.")),data=qdata,importance=TRUE)
+ord<-order(rf$importance[,"MeanDecreaseGini"])
+imp<-rf$importance[,"MeanDecreaseGini"]
+imp_num<-as.numeric(sub("q","",names(imp)[ord]))
 res <- analyze_removed_questions(qdata, imp_num=imp_num[1:(length(imp_num)-1)], party_col=party_col)
 #plot class error by removed question
 error_ggplot(res)
