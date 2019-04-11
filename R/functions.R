@@ -325,8 +325,8 @@ PAF<-function(data,nfactors,vss,cols){
 sub_parties_for_shortcodes <- function(datacol){
   #get rid of extra party names inside brackets inside the party columns
   datacol <- stringr::str_replace(datacol," [:punct:].+[:punct:]","")
-  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE")
-  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin")
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE","KTP", "SSP","VP")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin","KTP - Rauhan ja Sosialismin puolesta","Suomen Senioripuolue","VP Suomen tulevaisuus")
   names(short_parties) <- parties
   parties_c <- stringr::str_c("^",parties,collapse = "|")
   party_repl <- function(p){
