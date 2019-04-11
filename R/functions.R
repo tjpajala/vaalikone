@@ -265,7 +265,7 @@ prepare_data <- function(data, q_cols, party_col,limit){
 set_small_parties_to_other <- function(data, colname_party="party",limit=10){
   data[[colname_party]] <- factor(data[[colname_party]])
   var_unquo <- rlang::sym(colname_party)
-  big_parties<-data[,colname_party] %>% dplyr::count(!!var_unquo) %>% dplyr::filter(n>limit) %>% dplyr::pull(!!var_unquo)
+  big_parties<-data %>% group_by(!!var_unquo)%>% dplyr::count(!!var_unquo) %>% dplyr::filter(n>limit) %>% dplyr::pull(!!var_unquo)
   data[,colname_party] <- forcats::fct_other(data[[colname_party]],keep=big_parties,other_level = "Other")
   return(data[[colname_party]])
 }
