@@ -8,6 +8,8 @@ for(p in source_packages){
 }
 source("./R/functions.R")
 source("./R/plotting.R")
+
+
 #data setup code
 setup_data <- function(dataset_name,filter_precinct = c("01 Helsingin vaalipiiri"), online_load=FALSE){
   #dataset_name <- "yle_2011" #option: yle_2011, hs_2015, yle_2019 (not public)
