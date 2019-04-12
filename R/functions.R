@@ -212,9 +212,45 @@ get_data_cols <- function(dataset_name,data){
      "Suomen_lakien_pitäisi_nykyistä_vapaammin_antaa_ihmisten_tehdä_omat_ratkaisunsa_ja_kantaa_niiden_seuraukset.",                                  
      "Poliitikon_velvollisuus_on_ennen_kaikkea_ajaa_omien_äänestäjiensä_etuja." 
   )
+  
+  yle_2015_q_list <- c(
+    "X127.Suomessa_on_liian_helppo_elää_sosiaaliturvan_varassa",
+    "X128.Kaupan_ja_muiden_liikkeiden_aukioloajat_on_vapautettava.",
+    "X129.Suomessa_on_siirryttävä_perustuloon_joka_korvaisi_nykyisen_sosiaaliturvan_vähimmäistason.",
+    "X130.Työntekijälle_on_turvattava_lailla_minimityöaika.",
+    "X131.Ansiosidonnaisen_työttömyysturvan_kestoa_pitää_lyhentää.",
+    "X132.Euron_ulkopuolella_Suomi_pärjäisi_paremmin.",
+    "X133.Ruoan_verotusta_on_varaa_kiristää.",
+    "X134.Valtion_ja_kuntien_taloutta_on_tasapainotettava_ensisijaisesti_leikkaamalla_menoja.",
+    "X135.Lapsilisiä_on_korotettava_ja_laitettava_verolle.",
+    "X136.Suomella_ei_ole_varaa_nykyisen_laajuisiin_sosiaali._ja_terveyspalveluihin.",
+    "X137.Nato.jäsenyys_vahvistaisi_Suomen_turvallisuuspoliittista_asemaa.",
+    "X138.Suomeen_tarvitaan_enemmän_poliiseja.",
+    "X139.Maahanmuuttoa_Suomeen_on_rajoitettava_terrorismin_uhan_vuoksi.",
+    "X140.Venäjän_etupiiripolitiikka_on_uhka_Suomelle.",
+    "X141.Verkkovalvonnassa_valtion_turvallisuus_on_tärkeämpää_kuin_kansalaisten_yksityisyyden_suoja.",
+    "X142.Suomen_on_osallistuttava_Isisin_vastaiseen_taisteluun_kouluttamalla_Irakin_hallituksen_joukkoja.",
+    "X143.Parantumattomasti_sairaalla_on_oltava_oikeus_avustettuun_kuolemaan.",
+    "X144.Terveys._ja_sosiaalipalvelut_on_tuotettava_ensijaisesti_julkisina_palveluina.",
+    "X145.Viranomaisten_pitää_puuttua_lapsiperheiden_ongelmiin_nykyistä_herkemmin.",
+    "X146.Vanhuksen_ja_hänen_omaistensa_vastuuta_hoitokustannuksista_on_lisättävä.",
+    "X147.Kansalaisten_oikeus_terveyspalveluihin_on_tärkeämpää_kuin_kuntien_itsehallinto.",
+    "X148.Ilmastonmuutoksen_hillitseminen_pitää_asettaa_teollisuuden_kilpailukyvyn_edelle.",
+    "X149.Geenimuunneltu_ruoka_on_turvallista_ihmiselle_ja_ympäristölle.",
+    "X150.Suomen_pitää_ottaa_suurempi_vastuu_EU:n_alueelle_tulevista_turvapaikanhakijoista.",
+    "X151.On_aika_luopua_ajatuksesta,_että_koko_Suomi_on_pidettävä_asuttuna.",
+    "X152.Peruskoulun_opetusryhmien_koko_on_rajattava_lailla_esimerkiksi_20_oppilaaseen.",
+    "X201.Suomen_Nato.jäsenyydestä_on_järjestettävä_kansanäänestys.",
+    "X244.Hyväksytään_periaatepäätös_uuden_ydinvoimalaitosyksikön_rakentamisesta.",
+    "X245.Tuloveroa_alennetaan_tasaisesti_kaikissa_tuloluokissa_talouden_elvyttämiseksi.",
+    "X246.Edellisen_eduskunnan_hyväksymä_lainmuutos_samaa_sukupuolta_olevien_avioliiton_sallimisesta_peruutetaan.",                                                                     
+    "X247.Mietojen_viinien_ja_vahvojen_oluiden_myynti_ruokakaupassa_sallitaan.",
+    "X248.Ruotsin_kielen_opiskelu_muutetaan_vapaaehtoiseksi."                
+  )
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
-                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:](?!okeri-kysymys)"),
+                       #yle_2015 = names(data)[names(data)%in%yle_2015_q_list],
+                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:](?!okeri-kysymys)")[1:32],
                        yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.]."),
                        yle_2019 = stringr::str_replace_all(yle_2019_q_list," ","_")
   )
