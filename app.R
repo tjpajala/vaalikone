@@ -6,10 +6,8 @@ for(p in source_packages){
     library(p, character.only = T)
   }
 }
-if(!require(elecmachine)){
-  devtools::install_github('tjpajala/vaalikone')
-}
-
+source("./R/functions.R")
+source("./R/plotting.R")
 #data setup code
 setup_data <- function(dataset_name,filter_precinct = c("01 Helsingin vaalipiiri"), online_load=FALSE){
   #dataset_name <- "yle_2011" #option: yle_2011, hs_2015, yle_2019 (not public)
@@ -18,12 +16,12 @@ setup_data <- function(dataset_name,filter_precinct = c("01 Helsingin vaalipiiri
   }
   if(online_load){
     #online loading
-    data <- elecmachine::get_dataset(name=dataset_name,filter_precinct = filter_precinct)
+    data <- get_dataset(name=dataset_name,filter_precinct = filter_precinct)
   } else {
     #offline loading
     data <- readRDS(paste0("./data/",dataset_name,".rds"))
   }
-
+  
   party_col <- get_functional_column_name(data,alternative_spellings = c("puolue","Puolue","party","Party"))
   q_cols=get_data_cols(dataset_name = dataset_name, data=data)
   if(dataset_name=="yle_2011"){
@@ -55,7 +53,7 @@ calculate_distances_one_voter<-function(voter,cand_data,dataset_name,distance_me
   if(is.null(voter)){
     voter <- sample(c(limits$min,limits$max),size=ncol(cand_data),replace = T)
   }
-
+  
   if(ncol(cand_data)!=length(voter)){
     stop("Nonmatching dimensions in cand_data and voter!")
   }
@@ -69,7 +67,7 @@ calculate_distances_one_voter<-function(voter,cand_data,dataset_name,distance_me
     dist_limits <-list("min"=0,"max"=sqrt((limits$max-1)^2*length(voter)))
     cand_scores <- 100 - (sqrt(rowSums(q_dist))/dist_limits$max)*100
   }
-
+  
   return(cand_scores)
 }
 
@@ -102,7 +100,7 @@ calculate_distances_all_voters <- function(voters, data, dataset_name,distance_m
 
 calculate_party_centers <- function(data, dataset_name, voter, metric, distance_metric){
   need(voter, "voter is missing in party center calculation")
-  party_col <- elecmachine::get_functional_column_name(data, alt_party_spellings)
+  party_col <- get_functional_column_name(data, alt_party_spellings)
   q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
   sym_party <- sym(party_col)
   if(metric=="eh_ka" ||metric=="et_ka"){
@@ -119,7 +117,7 @@ calculate_party_centers <- function(data, dataset_name, voter, metric, distance_
 
 calculate_party_distances <- function(data, dataset_name, voter, metric, distance_metric){
   shiny::need(voter,message = "voter is missing")
-  party_col <- elecmachine::get_functional_column_name(data, alt_party_spellings)
+  party_col <- get_functional_column_name(data, alt_party_spellings)
   q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
   sym_party <- sym(party_col)
   limits <- get_questions_and_answer_alternatives(data,dataset_name)$answers_limits
@@ -219,7 +217,7 @@ plot_party_centers<-function(data_full,dataset_name, voter, metric, distance_met
   colnames(rotated)<-c("PA1","PA2")
   d[,c("PA1","PA2")]<-rotated[,c("PA1","PA2")]
   #d <- rbind(d, c(NULL, f3[,c("PA1","PA2")], as.factor("voter")))
-  colp<- elecmachine::get_colors()
+  colp<- get_colors()
   voter_df <- data.frame("PA1"=f3[,"PA1"],"PA2"=f3[,"PA2"], "puolue"="Other","type"="voter")
   ggplot2::ggplot(d, ggplot2::aes(x = PA1, y = PA2,pch=type,size=type,alpha=type, color=!!party_col)) + 
     ggplot2::geom_point() + 
@@ -316,7 +314,7 @@ ui <- fluidPage(
 
 # Define server logic ----
 server <- function(input, output) {
-
+  
   reactive_data <- reactive({get_data(input$data_select)})
   
   qControls <- reactive(questions_to_taglist(reactive_data()$scores,input$data_select))
@@ -328,14 +326,14 @@ server <- function(input, output) {
   reactive_voter <- reactive({
     shiny::req(input[["1_q"]])
     get_voter_answers(input=input,data=reactive_data()$scores)
-    })
+  })
   
   
   output$dataset <- renderText({paste("Data: ", input$data_select, ", etäisyysmitalla ",input$dist_select,
                                       ", puolueen keskipiste ",input$party_mean_select, "\n",
                                       "äänestäjä: ", paste0(reactive_voter(),collapse = ", "),
                                       ", kysymyksiä: ",length(reactive_voter()))})
-  #output$fa_plot <- renderPlot({elecmachine::FA_ggplot(get_data(input$data_select),flip=20, 
+  #output$fa_plot <- renderPlot({FA_ggplot(get_data(input$data_select),flip=20, 
   #                                                     colname_party=get_party_name(input$data_select),
   #                                                     encircle = F)})
   output$fa_plot <- renderPlot({plot_party_centers(data_full=reactive_data(),
@@ -350,8 +348,8 @@ server <- function(input, output) {
                                                                         voter=reactive_voter(), 
                                                                         metric=input$party_mean_select, 
                                                                         distance_metric=input$dist_select)},
-                                         options = list(
-                                           order=list(2,'desc')))
+                                             options = list(
+                                               order=list(2,'desc')))
   
   #output$closest_candidates<- renderDataTable({combine_cands_and_scores(get_data(input$data_select)$scores,
   #                                                                      calculate_distances_one_voter(voter = get_voter_answers(input),
