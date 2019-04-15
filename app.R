@@ -271,7 +271,8 @@ questions_to_taglist<-function(data, dataset_name){
   #}
   elem_list <- lapply(1:length(questions$questions), function(q) {
     #questions$questions[q]
-    radioButtons(inputId=paste0(q,"_q"),label=questions$questions[q],choices = c(1:5),selected = 3,inline = T)
+    radioButtons(inputId=paste0(q,"_q"),label=stringr::str_replace_all(questions$questions[q],"_"," "),
+                 choiceValues = list(1,2,3,4,5),choiceNames=list("--","-","0","+","++"),selected = 3,inline = T)
   })
   do.call(tagList, elem_list)
   return(elem_list)
@@ -333,11 +334,14 @@ server <- function(input, output) {
     get_voter_answers(input=input,data=reactive_data()$scores)
   })
   
-  
-  output$dataset <- renderText({paste("Data: ", input$data_select, ", etäisyysmitalla ",input$dist_select,
-                                      ", puolueen keskipiste: ",input$party_mean_select, "\n",
-                                      "äänestäjä: ", paste0(reactive_voter(),collapse = ", "),
-                                      ", kysymyksiä: ",length(reactive_voter()))})
+  output$dataset <- renderText({"Tällä voit kokeilla erilaisten etäisyysmittojen sekä 
+    puolue-etäisyyden määritelmien vaikutusta sinulle suositeltavan puolueen tulokseen. Käytössä on 
+    kolme datasettiä: kaikki YLEn kolmen edellisen eduskuntavaalin tulokset. Oikeasta reunasta
+    voit valita haluamasi laskenta-algoritmin ominaisuudet, sekä vastata kyseisen vuoden vaalikoneen kysymyksiin."})
+  #output$dataset <- renderText({paste("Data: ", input$data_select, ", etäisyysmitalla ",input$dist_select,
+  #                                    ", puolueen keskipiste: ",input$party_mean_select, "\n",
+  #                                    "äänestäjä: ", paste0(reactive_voter(),collapse = ", "),
+  #                                    ", kysymyksiä: ",length(reactive_voter()))})
   #output$fa_plot <- renderPlot({FA_ggplot(get_data(input$data_select),flip=20, 
   #                                                     colname_party=get_party_name(input$data_select),
   #                                                     encircle = F)})
