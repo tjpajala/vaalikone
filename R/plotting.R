@@ -23,8 +23,8 @@ rot<-function(x,y,flip){
 #'
 #'@export
 get_colors <- function(){
-  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP","FP","STL","KP","ST","LIB","EOP","LN","SIT","SKE")
-  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1","hotpink","olivedrab3","slateblue4","royalblue","turquoise4","gold2","magenta4","wheat4","skyblue1")
+  parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SEN","SKP","STP","VAS","VIHR","VP","FP","STL","KP","ST","LIB","EOP","LN","SIT","SKE","SSP","PSY")
+  colp=c("blue","red1","purple","darkgreen","darkblue","grey","red1","blue","brown","orange","yellow3","red2","red1","pink2","red1","darkred","green","red1","hotpink","olivedrab3","slateblue4","royalblue","turquoise4","gold2","magenta4","wheat4","skyblue1","grey3","grey5")
   names(colp)<-parties
   return(colp)
 }
