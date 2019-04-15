@@ -105,12 +105,12 @@ calculate_party_centers <- function(data, dataset_name, voter, metric, distance_
   party_col <- get_functional_column_name(data, alt_party_spellings)
   q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
   sym_party <- sym(party_col)
-  if(metric=="eh_ka" ||metric=="et_ka"){
+  if(metric=="ehdokkaiden_keskiarvo" ||metric=="etaisyyksien_keskiarvo"){
     centers <- data %>% dplyr::group_by(!!sym_party) %>% dplyr::select(dplyr::one_of(party_col,q_cols)) %>% 
       dplyr::summarise_each(mean)
     return(centers)
   }
-  if(metric=="eh_md" || metric=="et_md"){
+  if(metric=="ehdokkaiden_mediaani" || metric=="etaisyyksien_mediaani"){
     centers <- data %>% dplyr::group_by(!!sym_party) %>% dplyr::select(dplyr::one_of(party_col,q_cols)) %>% 
       dplyr::summarise_each(median)
     return(centers)
@@ -123,8 +123,9 @@ calculate_party_distances <- function(data, dataset_name, voter, metric, distanc
   q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
   sym_party <- sym(party_col)
   limits <- get_questions_and_answer_alternatives(data,dataset_name)$answers_limits
+  percentage_round_digits <- 2
   
-  if(metric=="eh_ka"){
+  if(metric=="ehdokkaiden_keskiarvo"){
     print(length(voter))
     centers <- calculate_party_centers(data=data, dataset_name=dataset_name, voter=voter, metric=metric, 
                                        distance_metric=distance_metric)
@@ -137,11 +138,11 @@ calculate_party_distances <- function(data, dataset_name, voter, metric, distanc
     }
     dist <- calculate_distances_one_voter(voter=voter,cand_data=centers[,q_cols],dataset_name=dataset_name,
                                           distance_metric=distance_metric,limits=limits)
-    max_dist <- (limits$max-1)*length(voter)
-    centers["match"]<-round((1-dist/max_dist)*100,3)
+    #dist is already scaled
+    centers["match"]<-round(dist,percentage_round_digits)
     return(centers[,c(party_col,"match")])
   }
-  if(metric=="eh_md"){
+  if(metric=="ehdokkaiden_mediaani"){
     centers <- calculate_party_centers(data, dataset_name, voter, metric, distance_metric)
     if(ncol(centers[,q_cols])!=length(voter)){
       print(dim(centers[,q_cols]))
@@ -150,27 +151,29 @@ calculate_party_distances <- function(data, dataset_name, voter, metric, distanc
     }
     dist <- calculate_distances_one_voter(voter=voter,cand_data=centers[,q_cols],dataset_name=dataset_name,
                                           distance_metric=distance_metric,limits=limits)
-    #return((1-dist/max_dist)*100)
-    centers["match"]<-round((1-dist/max_dist)*100,3)
+    #dist is already scaled
+    centers["match"]<-round(dist,percentage_round_digits)
     return(centers[,c(party_col,"match")])
     
   }
-  if(metric=="et_ka"){
+  if(metric=="etaisyyksien_keskiarvo"){
     dist <- calculate_distances_one_voter(voter=voter,cand_data=data[,q_cols],dataset_name=dataset_name,
                                           distance_metric=distance_metric,limits=limits)
     data["match"]<-dist
     centers <- data %>% dplyr::group_by(!!sym_party) %>% dplyr::select(dplyr::one_of(party_col,"match")) %>% 
       dplyr::summarise_each(mean)
-    centers[,"match"]<-round(centers[,"match"],3)
+    #centers is already scaled to max_dist
+    centers[,"match"]<-round(centers[,"match"],percentage_round_digits)
     return(centers)
   }
-  if(metric=="et_md"){
+  if(metric=="etaisyyksien_mediaani"){
     dist <- calculate_distances_one_voter(voter=voter,cand_data=data[,q_cols],dataset_name=dataset_name,
                                           distance_metric=distance_metric,limits=limits)
     data["match"]<-dist
     centers <- data %>% dplyr::group_by(!!sym_party) %>% dplyr::select(dplyr::one_of(party_col,"match")) %>% 
       dplyr::summarise_each(median)
-    centers[,"match"]<-round(centers[,"match"],3)
+    #centers is already scaled to max_dist
+    centers[,"match"]<-round(centers[,"match"],percentage_round_digits)
     return(centers)
   }
 }
@@ -290,7 +293,7 @@ combine_cands_and_scores <- function(cand_data, dist_scores){
 
 # Define UI ----
 ui <- fluidPage(
-  titlePanel("Vaalikoneen etäisyysmitta ja keskipisteen määritelmä"),
+  titlePanel("Vaalikoneen etäisyysmitta ja puolue-etäisyyden määritelmä"),
   
   sidebarLayout(
     position = "right",
@@ -301,9 +304,9 @@ ui <- fluidPage(
                              selected = "yle_2019"),
                  selectInput("dist_select","Etäisyysmitta",
                              choices = list("L1"="L1","L2"="L2")),
-                 selectInput("party_mean_select","Keskipisteen määritelmä",
-                             choices = list("Ehdokkaiden keskiarvo"="eh_ka","Ehdokkaiden mediaani"="eh_md",
-                                            "Etäisyyksien keskiarvo"="et_ka","Etäisyyksien mediaani"="et_md")),
+                 selectInput("party_mean_select","Puolue-etäisyyden määritelmä",
+                             choices = list("Ehdokkaiden keskiarvo"="ehdokkaiden_keskiarvo","Ehdokkaiden mediaani"="ehdokkaiden_mediaani",
+                                            "Etäisyyksien keskiarvo"="etaisyyksien_keskiarvo","Etäisyyksien mediaani"="etaisyyksien_mediaani")),
                  uiOutput("questionControls")),
     mainPanel("",
               textOutput("dataset"),
@@ -332,7 +335,7 @@ server <- function(input, output) {
   
   
   output$dataset <- renderText({paste("Data: ", input$data_select, ", etäisyysmitalla ",input$dist_select,
-                                      ", puolueen keskipiste ",input$party_mean_select, "\n",
+                                      ", puolueen keskipiste: ",input$party_mean_select, "\n",
                                       "äänestäjä: ", paste0(reactive_voter(),collapse = ", "),
                                       ", kysymyksiä: ",length(reactive_voter()))})
   #output$fa_plot <- renderPlot({FA_ggplot(get_data(input$data_select),flip=20, 
@@ -351,7 +354,11 @@ server <- function(input, output) {
                                                                         metric=input$party_mean_select, 
                                                                         distance_metric=input$dist_select)},
                                              options = list(
-                                               order=list(2,'desc')))
+                                               order=list(2,'desc'),
+                                               columns=list(list(title=""),
+                                                            list(title="puolue"),
+                                                            list(title="sopivuus %"))
+                                               ))
   
   #output$closest_candidates<- renderDataTable({combine_cands_and_scores(get_data(input$data_select)$scores,
   #                                                                      calculate_distances_one_voter(voter = get_voter_answers(input),
