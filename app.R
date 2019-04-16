@@ -1,5 +1,5 @@
 
-source_packages <- c("shiny","dplyr","psych","DT","ggplot2","devtools")
+source_packages <- c("shiny","dplyr","psych","DT","ggplot2","devtools","corrplot")
 for(p in source_packages){
   if(!require(p, character.only = T, quietly = F)){
     install.packages(p, character.only = T)
@@ -298,10 +298,23 @@ combine_cands_and_scores <- function(cand_data, dist_scores){
   return(cand_data)
 }
 
+confusion_plot<-function(confusionmatrix, margin=1, order="original") 
+  corrplot::corrplot(prop.table(confusionmatrix, margin), 
+                     method="shade", 
+                     is.corr=FALSE, 
+                     addCoef.col="cyan",
+                     cl.pos="n", 
+                     addCoefasPercent=TRUE,
+                     col=colorRampPalette(c("white","white","black"),1)(80),
+                     order=order)
+
+confusion <- function() matrix(runif(21*21)*100,21,21)
+
+accuracy <- function(confusionmatrix) sum(diag(confusionmatrix))/sum(confusionmatrix)
+
 # Define UI ----
 ui <- fluidPage(
   titlePanel("Vaalikoneen etäisyysmitta ja puolue-etäisyyden määritelmä"),
-  
   sidebarLayout(
     position = "right",
     sidebarPanel("", style = "overflow-y:scroll; max-height: 800px", width = 4,
@@ -317,8 +330,26 @@ ui <- fluidPage(
                                             "Etäisyyksien keskiarvo"="etaisyyksien_keskiarvo","Etäisyyksien mediaani"="etaisyyksien_mediaani")),
                  uiOutput("questionControls")),
     mainPanel("",
-              textOutput("dataset"),
-              plotOutput("fa_plot"),
+              textOutput("dataset"), 
+              br(),
+              tabsetPanel(
+                tabPanel("Faktorit", plotOutput("fa_plot")), 
+                tabPanel("Luokittelu", 
+                         sidebarLayout(
+                           position="left", sidebarPanel(
+                             fluidRow("Taulukko näyttää valitsemallasi etäisyys- ja 
+keskipistemäärityksillä, miten vaalikoneeseen vastanneiden ehdokkaiden puoluevastaavuudet jakaantuvat. 
+Rivi kertoo ehdokkaan oikean puolueen ja sarake puolueen, jonka algoritmi antaisi ehdokkaalle itselleen. 
+Luvut ovat osuuksia prosentteina. Jos algoritmi toimisi täydellisesti, olisi lävistäjällä 100% ja muualla nolla. 
+                                      (Vastauksesi vaalikonekysymyksiin eivät vaikuta tähän taulukkoon.)"),
+                             br(), 
+                             strong(textOutput("accuracy")),
+                             width=4), 
+                           mainPanel(plotOutput("confusion"))
+                         ) 
+                )
+              ),
+              hr(),
               dataTableOutput("closest_candidates"),
               dataTableOutput("parties_dist"))
     
@@ -358,21 +389,51 @@ server <- function(input, output) {
                                                    metric=input$party_mean_select, 
                                                    distance_metric=input$dist_select)})
   
+  output$confusion <- renderPlot({confusion_plot(confusionmatrix=confusion(), 
+                                                 margin=2, order="original")})
   
-  output$parties_dist <- DT::renderDataTable({calculate_party_distances(data=reactive_data()$scores, 
-                                                                        dataset_name=input$data_select, 
-                                                                        voter=reactive_voter(), 
-                                                                        metric=input$party_mean_select, 
-                                                                        distance_metric=input$dist_select) %>%
-      dplyr::mutate(puolue2:=paste0(shortcodes_to_parties(!!sym(get_party_name(input$data_select)))," (",!!sym(get_party_name(input$data_select)),")")) %>% 
-      dplyr::select(puolue2,match)},
-                                             options = list(
-                                               order=list(1,'desc'),
-                                               columns=list(#list(title=""),
-                                                            list(title="puolue"),
-                                                            list(title="sopivuus %")),
-                                               paging=FALSE
-                                               ),rownames=FALSE)
+  output$accuracy <- renderText({paste("Kokonaistarkkuus: ", round(100*accuracy(confusion()), 2), "%")})
+  
+  output$parties_dist <- DT::renderDataTable({
+    p <- DT::datatable(calculate_party_distances(data=reactive_data()$scores, 
+                                                 dataset_name=input$data_select, 
+                                                 voter=reactive_voter(), 
+                                                 metric=input$party_mean_select, 
+                                                 distance_metric=input$dist_select) %>%
+                         dplyr::mutate(puolue2:=paste0(shortcodes_to_parties(!!sym(get_party_name(input$data_select)))," (",!!sym(get_party_name(input$data_select)),")")) %>% 
+                         dplyr::select(puolue2,match),
+                       options = list(
+                         order=list(1,'desc'),
+                         columns=list(#list(title=""),
+                           list(title="puolue"),
+                           list(title="sopivuus %")),
+                         paging=FALSE
+                       ),
+                       rownames=FALSE, 
+                       selection="none")
+    p <- p %>% DT::formatStyle("match",
+                               background = DT::styleColorBar(c(0, 100), 'lightblue'),
+                               backgroundSize = '98% 88%',
+                               backgroundRepeat = 'no-repeat',
+                               backgroundPosition = 'center')
+    return(p)
+  })
+  
+  
+  #output$parties_dist <- DT::renderDataTable({calculate_party_distances(data=reactive_data()$scores, 
+  #                                                                      dataset_name=input$data_select, 
+  #                                                                      voter=reactive_voter(), 
+  #                                                                      metric=input$party_mean_select, 
+  #                                                                      distance_metric=input$dist_select) %>%
+  #    dplyr::mutate(puolue2:=paste0(shortcodes_to_parties(!!sym(get_party_name(input$data_select)))," (",!!sym(get_party_name(input$data_select)),")")) %>% 
+  #    dplyr::select(puolue2,match)},
+  #                                           options = list(
+  #                                             order=list(1,'desc'),
+  #                                             columns=list(#list(title=""),
+  #                                                          list(title="puolue"),
+  #                                                          list(title="sopivuus %")),
+  #                                             paging=FALSE
+  #                                             ),rownames=FALSE)
 }
 
 # Run the app ----
