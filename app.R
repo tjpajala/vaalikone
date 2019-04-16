@@ -227,10 +227,10 @@ plot_party_centers<-function(data_full,dataset_name, voter, metric, distance_met
   ggplot2::ggplot(d, ggplot2::aes(x = PA1, y = PA2,pch=type,size=type,alpha=type, color=!!party_col)) + 
     ggplot2::geom_point() + 
     geom_point(data=voter_df,color="black")+
-    geom_text(data = d[d$type=="center",], aes(label=!!party_col), nudge_y = -0.1, show.legend = F)+
-    geom_text(data = voter_df, label="voter", color="black", nudge_y = -0.1, show.legend = F)+
+    geom_text(data = d[d$type=="center",], aes(label=!!party_col), nudge_y = -0.15, show.legend = F)+
+    geom_text(data = voter_df, label="voter", color="black", nudge_y = -0.15, show.legend = F)+
     ggplot2::scale_color_manual(values = colp) + ggplot2::scale_shape_manual(values=c(16, 17, 13))+
-    ggplot2::scale_size_manual(values=c(1.5,3,3))+ ggplot2::scale_alpha_manual(values=c(0.3,1,1))+
+    ggplot2::scale_size_manual(values=c(1.5,4,4))+ ggplot2::scale_alpha_manual(values=c(0.3,1,1))+
     ggplot2::theme_classic()
   
 }
@@ -362,7 +362,8 @@ server <- function(input, output) {
                                                order=list(2,'desc'),
                                                columns=list(list(title=""),
                                                             list(title="puolue"),
-                                                            list(title="sopivuus %"))
+                                                            list(title="sopivuus %")),
+                                               paging=FALSE
                                                ))
   
   #output$closest_candidates<- renderDataTable({combine_cands_and_scores(get_data(input$data_select)$scores,
