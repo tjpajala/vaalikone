@@ -14,6 +14,13 @@ get_YLE_2015_data <- function(filter_precinct=NULL){
   if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
   }
+  q_cols <- get_original_data_cols("yle_2015",data)
+  #turn string answers to numeric if necessary
+  for(col in q_cols){
+    data[,col] <- plyr::mapvalues(data[[col]],
+    from=c("täysin eri mieltä","jokseenkin eri mieltä","ohita kysymys","jokseenkin samaa mieltä","täysin samaa mieltä"),
+    to=c(1,2,3,4,5),warn_missing = T)
+  }
   #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
   return(data)
@@ -35,7 +42,16 @@ get_YLE_2011_data <- function(filter_precinct=NULL){
   #include only Helsinki?
   if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, Vaalipiiri%in%filter_precinct)
-  }  #drop columns with all NAs
+  }  
+  q_cols <- get_original_data_cols("yle_2011",data)
+
+  #turn string answers to numeric if necessary
+  for(col in q_cols){
+    data[,col] <- plyr::mapvalues(data[[col]],
+    from=c("täysin eri mieltä","jokseenkin eri mieltä","en osaa sanoa","jokseenkin samaa mieltä","täysin samaa mieltä"),
+    to=c(1,2,3,4,5),warn_missing = T)
+  }
+  #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
   
   return(data)
@@ -58,6 +74,13 @@ get_YLE_2019_data <- function(filter_precinct=NULL){
   #include only Helsinki
   if(!is.null(filter_precinct)){
     data <- dplyr::filter(data, vaalipiiri%in%filter_precinct)
+  }
+  #turn string answers to numeric if necessary
+  q_cols <- get_original_data_cols("yle_2019",data)
+  
+  for(col in q_cols){
+    data[,col] <- plyr::mapvalues(data[[col]],
+    from=c("1","2","-","4","5"), to=c(1,2,3,4,5),warn_missing = T)
   }
   #drop columns with all NAs
   data <- data[,colSums(!is.na(data))>0]
@@ -239,21 +262,65 @@ get_data_cols <- function(dataset_name,data){
     "X149.Geenimuunneltu_ruoka_on_turvallista_ihmiselle_ja_ympäristölle.",
     "X150.Suomen_pitää_ottaa_suurempi_vastuu_EU:n_alueelle_tulevista_turvapaikanhakijoista.",
     "X151.On_aika_luopua_ajatuksesta,_että_koko_Suomi_on_pidettävä_asuttuna.",
-    "X152.Peruskoulun_opetusryhmien_koko_on_rajattava_lailla_esimerkiksi_20_oppilaaseen.",
-    "X201.Suomen_Nato.jäsenyydestä_on_järjestettävä_kansanäänestys.",
-    "X244.Hyväksytään_periaatepäätös_uuden_ydinvoimalaitosyksikön_rakentamisesta.",
-    "X245.Tuloveroa_alennetaan_tasaisesti_kaikissa_tuloluokissa_talouden_elvyttämiseksi.",
-    "X246.Edellisen_eduskunnan_hyväksymä_lainmuutos_samaa_sukupuolta_olevien_avioliiton_sallimisesta_peruutetaan.",                                                                     
-    "X247.Mietojen_viinien_ja_vahvojen_oluiden_myynti_ruokakaupassa_sallitaan.",
-    "X248.Ruotsin_kielen_opiskelu_muutetaan_vapaaehtoiseksi."                
+    "X152.Peruskoulun_opetusryhmien_koko_on_rajattava_lailla_esimerkiksi_20_oppilaaseen."
   )
   data_cols <- switch (dataset_name,
                        hs_2015 = names(dplyr::select(data, q1:q30)),
                        #yle_2015 = names(data)[names(data)%in%yle_2015_q_list],
-                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:](?!okeri-kysymys)")[1:32],
+                       yle_2015 = stringr::str_subset(names(data), "X?[:digit:]+[\\|.][:upper:](?!okeri-kysymys)")[1:26],
                        yle_2011 = stringr::str_subset(names(data), "X?[:digit:]+[\\|\\.]."),
                        yle_2019 = stringr::str_replace_all(yle_2019_q_list," ","_")
   )
+  if(dataset_name=="yle_2011"){
+    nums <- as.numeric(stringr::str_sub(data_cols,1,3))
+    idx <- sapply(1:length(nums), function(x) {is.na(x) | x<31})
+    data_cols <- data_cols[idx]
+  }
+
+  return(data_cols)
+}
+
+get_original_data_cols <- function(dataset_name,data){
+  yle_2019_q_list <- c(
+    "Suomen_pitää_olla_edelläkävijä_ilmastonmuutoksen_vastaisessa_taistelussa._vaikka_se_aiheuttaisi_suomalaisille_kustannuksia.",                  
+    "Suomen_ei_pidä_kiirehtiä_kieltämään_uusien_bensa._ja_dieselautojen_myyntiä.",                                                                  
+    "Valtion_pitää_ohjata_suomalaiset_syömään_vähemmän_lihaa_esimerkiksi_verotuksen_avulla.",                                                       
+    "Metsiä_hakataan_Suomessa_liikaa.",                                                                                                             
+    "Kun_valtion_menoja_ja_tuloja_tasapainotetaan._se_on_tehtävä_mieluummin_menoja_karsimalla_kuin_veroja_kiristämällä.",                           
+    "Sosiaaliturvaa_tulee_kehittää_niin._että_osa_nykyisistä_tuista_korvataan_kaikille_työikäisille_maksettavalla._vastikkeettomalla_perustulolla.",
+    "Euron_ulkopuolella_Suomi_pärjäisi_paremmin.",                                                                                                  
+    "Sosiaali._ja_terveyspalvelut_on_tuotettava_ensisijaisesti_julkisina_palveluina.",                                                              
+    "Vanhustenhoidon_ulkoistamista_yksityisille_toimijoille_tulee_lisätä.",                                                                         
+    "Parantumattomasti_sairaalla_on_oltava_oikeus_eutanasiaan.",                                                                                    
+    "Sukupuolen_korjaamisen_tulee_olla_mahdollista_myös_alle_18.vuotiaille.",                                                                       
+    "Viinit_ja_vahvat_oluet_pitää_saada_ruokakauppoihin.",                                                                                          
+    "Perhevapaita_pitää_uudistaa_niin._että_vapaat_jakautuvat_tasan_vanhempien_kesken.",                                                            
+    "Oppivelvollisuus_pitää_ulottaa_myös_ammatilliseen_koulutukseen_ja_lukioon.",                                                                   
+    "Koulujen_kesälomia_tulee_siirtää_kahdella_viikolla_niin._että_ne_alkavat_kesäkuun_puolivälissä_ja_päättyvät_elokuun_lopulla.",                 
+    "Korkeakoulujen_määrää_pitää_vähentää_ja_vapautuneet_voimavarat_käyttää_huippuopetukseen_ja_.tutkimukseen.",                                    
+    "Maahanmuuttajien_määrän_kasvu_on_lisännyt_turvattomuutta_Suomessa.",                                                                           
+    "Sosiaali._ja_terveyspalveluiden_rahoittaminen_vaatii_työperäisen_maahanmuuton_merkittävää_lisäämistä.",                                        
+    "Nato.jäsenyys_vahvistaisi_Suomen_turvallisuuspoliittista_asemaa.",                                                                             
+    "Vihapuhe_tulee_määritellä_ja_asettaa_rangaistavaksi_rikoslaissa.",                                                                             
+    "Perinteiset_arvot_ovat_hyvän_elämän_perusta.",                                                                                                 
+    "Suomessa_tarvitaan_nyt_koviakin_keinoja_järjestyksen_ja_tavallisten_ihmisten_puolustamiseksi.",                                                
+    "On_oikein._että_yhteiskunnassa_jotkut_ryhmät_ovat_paremmassa_asemassa_kuin_toiset.",                                                           
+    "Suomen_lakien_pitäisi_nykyistä_vapaammin_antaa_ihmisten_tehdä_omat_ratkaisunsa_ja_kantaa_niiden_seuraukset.",                                  
+    "Poliitikon_velvollisuus_on_ennen_kaikkea_ajaa_omien_äänestäjiensä_etuja." 
+  )
+  data_cols <- switch (dataset_name,
+                       hs_2015 = names(dplyr::select(data, q1:q30)),
+                       #yle_2015 = names(data)[names(data)%in%yle_2015_q_list],
+                       yle_2015 = stringr::str_subset(names(data), "[:digit:]+[\\|.][:upper:](?!okeri-kysymys)")[1:26],
+                       yle_2011 = stringr::str_subset(names(data), "[:digit:]+[\\|\\.]."),
+                       yle_2019 = stringr::str_replace_all(yle_2019_q_list," ","_")
+  )
+  if(dataset_name=="yle_2011"){
+    nums <- as.numeric(stringr::str_sub(data_cols,1,3))
+    idx <- sapply(1:length(nums), function(x) {is.na(x) | x<31})
+    data_cols <- data_cols[idx]
+  }
+  
   return(data_cols)
 }
 
@@ -361,8 +428,8 @@ PAF<-function(data,nfactors,vss,cols){
 sub_parties_for_shortcodes <- function(datacol){
   #get rid of extra party names inside brackets inside the party columns
   datacol <- stringr::str_replace(datacol," [:punct:].+[:punct:]","")
-  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE","KTP", "SSP","VP","PSY")
-  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin","KTP - Rauhan ja Sosialismin puolesta","Suomen Senioripuolue","VP Suomen tulevaisuus","Pirkanmaan Sitoutumattomat yhteislista")
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE","KTP", "SSP","VP","PSY","KTP","KTP","VP")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin","KTP - Rauhan ja Sosialismin puolesta","Suomen Senioripuolue","Vapauspuolue Suomen tulevaisuus","Pirkanmaan Sitoutumattomat yhteislista","Kommunistinen Työväenpuolue - Rauhan ja Sosialismin puolesta","Kommunistinen Työväenpuolue","Vapauspuolue")
   names(short_parties) <- parties
   parties_c <- stringr::str_c("^",parties,collapse = "|")
   party_repl <- function(p){
@@ -372,6 +439,17 @@ sub_parties_for_shortcodes <- function(datacol){
   stringr::str_replace_all(datacol, parties_c,party_repl)
 }
 
+shortcodes_to_parties <- function(shortcodes){
+  short_parties<-c("IP","KA","KD","KESK","KOK","Other","KTP","M2011","PIR","PS","RKP","SDP","SKP","STP","VAS","VIHR","VP", "RKP", "KESK","FP","KOK","STL","KP","KD","ST","LIB","EOP","LN","VIHR","SIT","SKE","KTP", "SSP","VP","PSY","Other")
+  parties <- c("Itsenäisyyspuolue","Köyhien Asialla","Suomen Kristillisdemokraatit","Suomen Keskusta","Kansallinen Kokoomus","Other","Kommunistinen Työväenpuolue","Muutos 2011","Piraattipuolue","Perussuomalaiset","Suomen ruotsalainen kansanpuolue","Suomen Sosialidemokraattinen Puolue","Suomen Kommunistinen Puolue","Suomen Työväenpuolue STP","Vasemmistoliitto","Vihreä liitto","Vapauspuolue","Ruotsalainen kansanpuolue","Keskusta","Feministinen puolue","Kokoomus","Seitsemän tähden liike","Kansalaispuolue","Kristillisdemokraatit","Sininen tulevaisuus","Liberaalipuolue","Eläinoikeuspuolue","Liike Nyt","Vihreät","Sitoutumaton","Suomen Kansa Ensin","KTP - Rauhan ja Sosialismin puolesta","Suomen Senioripuolue","VP Suomen tulevaisuus","Pirkanmaan Sitoutumattomat yhteislista","Other")
+  names(parties) <- short_parties
+  short_parties_c <- stringr::str_c("^",short_parties,collapse = "|")
+  party_repl <- function(p){
+    return(as.character(parties[as.character(p)]))
+    #return(p)
+  }
+  return(plyr::mapvalues(shortcodes,from = short_parties,to = parties, warn_missing = F))
+}
 
 #'Predict party membership with caret
 #'

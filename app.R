@@ -34,6 +34,9 @@ setup_data <- function(dataset_name,filter_precinct = c("01 Helsingin vaalipiiri
     #q_cols <- q_cols[q_cols!="35._Suosikkini_tulevan_hallituksen_pääministeriksi_on_(vain_yksi):"]
     
   }
+  if(dataset_name=="yle_2019"){
+    data<- data %>% filter(rowSums(data[,q_cols]==3)!=25)
+  }
   data <- prepare_data(data, q_cols, party_col,limit=10)
   
   
@@ -124,6 +127,9 @@ calculate_party_distances <- function(data, dataset_name, voter, metric, distanc
   sym_party <- sym(party_col)
   limits <- get_questions_and_answer_alternatives(data,dataset_name)$answers_limits
   percentage_round_digits <- 2
+  #if(!shortcodes){
+  #  data[[party_col]]<-shortcodes_to_parties(data[[party_col]])
+  #}
   
   if(metric=="ehdokkaiden_keskiarvo"){
     print(length(voter))
@@ -186,7 +192,7 @@ get_rotation<-function(dataset_name){
     return(180)
   }
   if(dataset_name=="yle_2019"){
-    return(-45)
+    return(90)
   }
 }
 
@@ -357,22 +363,16 @@ server <- function(input, output) {
                                                                         dataset_name=input$data_select, 
                                                                         voter=reactive_voter(), 
                                                                         metric=input$party_mean_select, 
-                                                                        distance_metric=input$dist_select)},
+                                                                        distance_metric=input$dist_select) %>%
+      dplyr::mutate(puolue2:=paste0(shortcodes_to_parties(!!sym(get_party_name(input$data_select)))," (",!!sym(get_party_name(input$data_select)),")")) %>% 
+      dplyr::select(puolue2,match)},
                                              options = list(
-                                               order=list(2,'desc'),
-                                               columns=list(list(title=""),
+                                               order=list(1,'desc'),
+                                               columns=list(#list(title=""),
                                                             list(title="puolue"),
                                                             list(title="sopivuus %")),
                                                paging=FALSE
-                                               ))
-  
-  #output$closest_candidates<- renderDataTable({combine_cands_and_scores(get_data(input$data_select)$scores,
-  #                                                                      calculate_distances_one_voter(voter = get_voter_answers(input),
-  #                                                                          cand_data = get_data(input$data_select)$scores[,get_data_cols(input$data_select,get_data(input$data_select)$scores)],
-  #                                                                          dataset_name = input$data_select,
-  #                                                                          distance_metric = input$dist_select
-  #                                                                          ))[,c(get_functional_column_name(get_data(input$data_select)$scores,alt_party_spellings),
-  #                                                                                "dist")]})
+                                               ),rownames=FALSE)
 }
 
 # Run the app ----
