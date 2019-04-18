@@ -121,7 +121,7 @@ calculate_party_centers <- function(data, dataset_name, voter, metric, distance_
 }
 
 calculate_party_distances <- function(data, dataset_name, voter, metric, distance_metric){
-  shiny::need(voter,message = "voter is missing")
+  #shiny::need(voter,message = "voter is missing")
   party_col <- get_functional_column_name(data, alt_party_spellings)
   q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
   sym_party <- sym(party_col)
@@ -132,11 +132,11 @@ calculate_party_distances <- function(data, dataset_name, voter, metric, distanc
   #}
   
   if(metric=="ehdokkaiden_keskiarvo"){
-    print(length(voter))
+    #print(length(voter))
     centers <- calculate_party_centers(data=data, dataset_name=dataset_name, voter=voter, metric=metric, 
                                        distance_metric=distance_metric)
-    print(dim(centers[,q_cols]))
-    print(ncol(centers[,q_cols]) == length(voter))
+    #print(dim(centers[,q_cols]))
+    #print(ncol(centers[,q_cols]) == length(voter))
     if(ncol(centers[,q_cols]) != length(voter)){
       print(dim(centers[,q_cols]))
       print(str(voter))
@@ -298,7 +298,7 @@ combine_cands_and_scores <- function(cand_data, dist_scores){
   return(cand_data)
 }
 
-confusion_plot<-function(confusionmatrix, margin=1, order="original") 
+confusion_plot<-function(confusionmatrix, margin=1, order="alphabet"){
   corrplot::corrplot(prop.table(confusionmatrix, margin), 
                      method="shade", 
                      is.corr=FALSE, 
@@ -307,8 +307,39 @@ confusion_plot<-function(confusionmatrix, margin=1, order="original")
                      addCoefasPercent=TRUE,
                      col=colorRampPalette(c("white","white","black"),1)(80),
                      order=order)
+} 
 
-confusion <- function() matrix(runif(21*21)*100,21,21)
+get_stored_cf_matrix <- function(dataset_name, metric, distance_metric){
+  return(readRDS(paste0("./data/cf_matrix/",dataset_name,"_",metric,"_",distance_metric,".rds")))
+}
+
+
+store_all_cf_matrix<-function(){
+  metrics<-c("ehdokkaiden_keskiarvo","ehdokkaiden_mediaani","etaisyyksien_keskiarvo","etaisyyksien_mediaani")
+  distance_metrics<-c("L1","L2")
+  datasets<-c("yle_2011","yle_2015","yle_2019")
+  params <- expand.grid(datasets,metrics,distance_metrics,stringsAsFactors = F)
+  colnames(params)<-c("dataset_name","metric","distance_metric")
+  for(i in 1:nrow(params)){
+    pr <- params[i,]
+    print(pr)
+    conf<-confusion(data=get_data(as.character(pr$dataset_name))$scores,dataset_name=as.character(pr$dataset_name),metric=as.character(pr$metric),distance_metric=as.character(pr$distance_metric))
+    saveRDS(conf,paste0("./data/cf_matrix/",pr$dataset_name,"_",pr$metric,"_",pr$distance_metric,".rds"))
+  }
+}
+
+#matrix(runif(21*21)*100,21,21)
+confusion <- function(data, dataset_name, metric, distance_metric){
+  q_cols <- get_data_cols(dataset_name = dataset_name, data=data)
+  party_col <- get_functional_column_name(data,alt_party_spellings)
+  d <- t(sapply(1:nrow(data), function(x) calculate_party_distances(data = data, dataset_name = dataset_name, voter = as.numeric(data[x,q_cols]),metric = metric, distance_metric = distance_metric)$match))
+  #print(dim(d))
+  #center_ops <- calculate_party_centers(data,dataset_name = dataset_name,voter = voter,metric = metric,distance_metric = distance_metric)
+  #d<-t(calculate_distances_all_voters(voters = t(data[,q_cols]),data = center_ops[,q_cols],dataset_name = dataset_name,distance_metric = distance_metric))
+  best <- sapply(1:nrow(d),function(x) which.max(d[x,]))
+  pred <- levels(data[[party_col]])[best]
+  return(table(data[[party_col]],factor(pred,levels = levels(data[[party_col]]))))
+}
 
 accuracy <- function(confusionmatrix) sum(diag(confusionmatrix))/sum(confusionmatrix)
 
@@ -389,10 +420,12 @@ server <- function(input, output) {
                                                    metric=input$party_mean_select, 
                                                    distance_metric=input$dist_select)})
   
-  output$confusion <- renderPlot({confusion_plot(confusionmatrix=confusion(), 
-                                                 margin=2, order="original")})
+  reactive_cfmatrix <- reactive({get_stored_cf_matrix(dataset_name = input$data_select,metric = input$party_mean_select,distance_metric = input$dist_select)})
+
+  output$confusion <- renderPlot({confusion_plot(confusionmatrix=reactive_cfmatrix(), 
+                                                 margin=1, order="alphabet")})
   
-  output$accuracy <- renderText({paste("Kokonaistarkkuus: ", round(100*accuracy(confusion()), 2), "%")})
+  output$accuracy <- renderText({paste("Kokonaistarkkuus: ", round(100*accuracy(reactive_cfmatrix()), 2), "%")})
   
   output$parties_dist <- DT::renderDataTable({
     p <- DT::datatable(calculate_party_distances(data=reactive_data()$scores, 
