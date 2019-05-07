@@ -215,7 +215,11 @@ plot_party_centers<-function(data_full,dataset_name, voter, metric, distance_met
   f2 <- predict.psych(data_full$fa,centers$locations[,2:(ncol(centers$locations))],data_full$scores[,2:(ncol(centers$locations))])
   f3 <- predict.psych(data_full$fa, voter, data_full$scores[,2:(ncol(centers$locations))])    
   #f2<-rot(f2[,"PA1"],f2[,"PA2"],get_rotation(dataset_name))
-  f3<-rot(f3[,"PA1"],f3[,"PA2"],get_rotation(dataset_name))
+  if(dataset_name=="yle_2019"){
+    f3<-rot(f3[,"PA1"],-f3[,"PA2"],get_rotation(dataset_name))
+  } else {
+    f3<-rot(f3[,"PA1"],f3[,"PA2"],get_rotation(dataset_name))
+  }
   #colnames(f2)<-c("PA1","PA2")
   colnames(f3)<-c("PA1","PA2")
   centers$locations["PA1"] <- f2[,"PA1"]
@@ -226,6 +230,10 @@ plot_party_centers<-function(data_full,dataset_name, voter, metric, distance_met
            centers$locations[,c(rlang::as_name(party_col),"PA1","PA2","type")])
   rotated <- rot(d[,"PA1"],d[,"PA2"],get_rotation(dataset_name))
   colnames(rotated)<-c("PA1","PA2")
+  if(dataset_name=="yle_2019"){
+    rotated[,"PA1"] <- rotated[,"PA1"]*-1
+    rotated[,"PA2"] <- rotated[,"PA2"]*1
+  }
   d[,c("PA1","PA2")]<-rotated[,c("PA1","PA2")]
   #d <- rbind(d, c(NULL, f3[,c("PA1","PA2")], as.factor("voter")))
   colp<- get_colors()
